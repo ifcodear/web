@@ -2,46 +2,53 @@ import React, { useState } from 'react';
 
 const ConsultationForm: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
     setStatus('sending');
-
-    const formData = new FormData(e.currentTarget);
-    const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "YOUR_WEB3FORMS_ACCESS_KEY_HERE";
-    formData.append("access_key", accessKey);
-    // Web3Forms customization options
-    formData.append("subject", "Nueva consulta desde la web de ifcodear");
-    formData.append("from_name", "IfCodear");
-
-    const object = Object.fromEntries(formData);
-    const json = JSON.stringify(object);
+    setErrorMessage('');
 
     try {
+      const formData = new FormData(form);
+      const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
+
+      if (!accessKey) {
+        throw new Error("La clave de acceso (VITE_WEB3FORMS_ACCESS_KEY) no está configurada.");
+      }
+
+      formData.append("access_key", accessKey);
+      formData.append("subject", "Nueva consulta desde la web de ifcodear");
+      formData.append("from_name", "IfCodear Web");
+
       const response = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
+        body: formData,
         headers: {
-          "Content-Type": "application/json",
           "Accept": "application/json"
-        },
-        body: json
+        }
       });
 
       const data = await response.json();
+      console.log("Web3Forms Raw Response:", data);
 
-      if (data.success) {
+      if (response.ok && (data.success || data.message === "Email Sent Successfully")) {
         setStatus('success');
-        e.currentTarget.reset();
-        setTimeout(() => setStatus('idle'), 5000);
+        form.reset();
+        setTimeout(() => setStatus('idle'), 6000);
       } else {
-        console.error("Error sending email", data);
+        const msg = data.message || "Error desconocido del servidor.";
+        console.error("Web3Forms Error Details:", data);
+        setErrorMessage(msg);
         setStatus('error');
-        setTimeout(() => setStatus('idle'), 5000);
+        setTimeout(() => setStatus('idle'), 8000);
       }
-    } catch (error) {
-      console.error("Request failed", error);
+    } catch (error: any) {
+      console.error("Critical submission error:", error);
+      setErrorMessage(error.message || "Error de red o configuración.");
       setStatus('error');
-      setTimeout(() => setStatus('idle'), 5000);
+      setTimeout(() => setStatus('idle'), 8000);
     }
   };
 
@@ -113,7 +120,7 @@ const ConsultationForm: React.FC = () => {
               Mensaje Enviado Exitosamente
             </>
           ) : status === 'error' ? (
-            'Ocurrió un error. Intenta nuevamente.'
+            errorMessage ? `Error: ${errorMessage}` : 'Reintentar envío'
           ) : (
             'Enviar Consulta Gratis'
           )}
