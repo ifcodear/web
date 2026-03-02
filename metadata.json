@@ -1,0 +1,9 @@
+
+{
+  "name": "ifcodear - Soluciones de Software a Tu Medida",
+  "description": "Una plataforma premium para agencias de desarrollo de software con pasarela de pagos, autenticación de Google y formularios de consulta.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
