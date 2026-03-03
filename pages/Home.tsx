@@ -45,8 +45,8 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage }) => {
           <div className="absolute -inset-10 bg-primary/10 blur-[100px] rounded-full animate-pulse" />
           <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-surface-dark p-6">
             <img
-              src="public/manos_teclado.avif"
-              alt="Plataforma tech"
+              src="/manos_teclado.avif"
+              alt="IfCodear.com"
               className="rounded-lg shadow-inner grayscale-[0.2] hover:grayscale-0 transition-all duration-500"
             />
             <div className="absolute bottom-10 right-10 bg-background-dark/80 backdrop-blur-md p-4 rounded-xl border border-white/10 animate-bounce">
