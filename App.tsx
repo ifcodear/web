@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import ServicesPage from './pages/ServicesPage';
 import ProcessPage from './pages/ProcessPage';
 import CheckoutPage from './pages/CheckoutPage';
+import FullStackPage from './pages/FullStackPage';
+import MobileAppsPage from './pages/MobileAppsPage';
 import { Page, User } from './types';
 
 const App: React.FC = () => {
@@ -42,6 +44,10 @@ const App: React.FC = () => {
         return <ProcessPage />;
       case Page.Checkout:
         return <CheckoutPage />;
+      case Page.FullStack:
+        return <FullStackPage />;
+      case Page.MobileApps:
+        return <MobileAppsPage />;
       case Page.Home:
       default:
         return <Home setCurrentPage={setCurrentPage} />;

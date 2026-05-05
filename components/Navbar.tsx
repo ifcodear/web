@@ -49,6 +49,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onLo
             <button
               key={item.label}
               onClick={() => {
+                setCurrentPage(item.value);
                 if (item.hash) {
                   window.location.hash = 'home';
                   setTimeout(() => {

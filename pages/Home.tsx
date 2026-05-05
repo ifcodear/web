@@ -64,19 +64,6 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage }) => {
         </div>
       </section>
 
-      {/* Trusted By (Logos) */}
-      <section className="bg-black/40 py-16 border-y border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-          <p className="text-center text-xs font-black text-gray-500 uppercase tracking-widest mb-10">Empresas que confían en nosotros</p>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-12 opacity-40 grayscale transition-all hover:grayscale-0">
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="flex items-center justify-center">
-                <img src={`https://picsum.photos/seed/logo${i}/200/80?grayscale`} alt="Client" className="h-8 md:h-12 object-contain" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Services Summary */}
       <section className="max-w-7xl mx-auto px-6 py-24">
@@ -86,12 +73,12 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage }) => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { title: 'Full-Stack', icon: 'code', desc: 'Soluciones web de extremo a extremo.' },
-            { title: 'App Móviles', icon: 'smartphone', desc: 'Apps nativas para iOS y Android.' },
-            { title: 'Cloud & DevOps', icon: 'cloud', desc: 'Infraestructura segura en la nube.' },
-            { title: 'Inteligencia Artificial', icon: 'bolt', desc: 'Automatización inteligente de procesos.' }
+            { title: 'Full-Stack', icon: 'code', desc: 'Soluciones web de extremo a extremo.', page: Page.FullStack },
+            { title: 'App Móviles', icon: 'smartphone', desc: 'Apps nativas para iOS y Android.', page: Page.MobileApps },
+            { title: 'Cloud & DevOps', icon: 'cloud', desc: 'Infraestructura segura en la nube.', page: Page.Services },
+            { title: 'Inteligencia Artificial', icon: 'bolt', desc: 'Automatización inteligente de procesos.', page: Page.Services }
           ].map((s, idx) => (
-            <div key={idx} className="p-8 bg-surface-dark border border-white/10 rounded-2xl group hover:border-primary/50 transition-all cursor-pointer">
+            <div key={idx} onClick={() => setCurrentPage(s.page)} className="p-8 bg-surface-dark border border-white/10 rounded-2xl group hover:border-primary/50 transition-all cursor-pointer">
               <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-black transition-all">
                 {idx === 0 && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>}
                 {idx === 1 && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>}
