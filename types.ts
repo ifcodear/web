@@ -31,5 +31,6 @@ export enum Page {
   Process = 'process',
   Checkout = 'checkout',
   FullStack = 'fullstack',
-  MobileApps = 'mobileapps'
+  MobileApps = 'mobileapps',
+  Engineering = 'engineering'
 }

@@ -8,19 +8,19 @@ import ProcessPage from './pages/ProcessPage';
 import CheckoutPage from './pages/CheckoutPage';
 import FullStackPage from './pages/FullStackPage';
 import MobileAppsPage from './pages/MobileAppsPage';
+import EngineeringPage from './pages/EngineeringPage';
 import { Page, User } from './types';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.Home);
   const [user, setUser] = useState<User | null>(null);
 
-  // Simple hash-based routing
+  // Hash-based routing
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash.replace('#', '') as Page;
       if (Object.values(Page).includes(hash)) {
         setCurrentPage(hash);
-        window.scrollTo(0, 0);
       } else {
         setCurrentPage(Page.Home);
       }
@@ -32,6 +32,11 @@ const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
+  // Scroll to top on every page change (hash routing + direct setCurrentPage calls)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [currentPage]);
+
   const handleLogin = (userData: User) => {
     setUser(userData);
   };
@@ -39,7 +44,7 @@ const App: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case Page.Services:
-        return <ServicesPage />;
+        return <ServicesPage setCurrentPage={setCurrentPage} />;
       case Page.Process:
         return <ProcessPage />;
       case Page.Checkout:
@@ -48,6 +53,8 @@ const App: React.FC = () => {
         return <FullStackPage />;
       case Page.MobileApps:
         return <MobileAppsPage />;
+      case Page.Engineering:
+        return <EngineeringPage />;
       case Page.Home:
       default:
         return <Home setCurrentPage={setCurrentPage} />;
