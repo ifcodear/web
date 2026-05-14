@@ -15,6 +15,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onLo
     { label: 'Inicio', value: Page.Home },
     { label: 'Servicios', value: Page.Services },
     { label: 'Proceso', value: Page.Process },
+    { label: 'Roadmap', value: Page.Roadmap },
+    { label: 'Presupuestos', value: Page.Pricing },
     { label: 'Contacto', value: Page.Home, hash: '#contact' },
   ];
 
@@ -97,10 +99,10 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onLo
             </button>
           )}
           <button
-            onClick={() => setCurrentPage(Page.Checkout)}
+            onClick={() => setCurrentPage(Page.RoadmapBuilder)}
             className="px-6 py-2.5 bg-primary text-black text-sm font-bold rounded-lg shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
           >
-            Agendar Consulta
+            Armar Proyecto
           </button>
         </div>
       </div>

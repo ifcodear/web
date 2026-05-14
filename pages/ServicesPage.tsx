@@ -33,7 +33,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ setCurrentPage }) => {
       desc: "Ayudamos a las empresas a definir un roadmap tecnológico claro. Evaluamos su stack actual y proponemos soluciones rentables.",
       tag: "Visión de Futuro",
       points: ["Selección de stack tecnológico", "Auditorías de seguridad y calidad"],
-      link: null as Page | null,
+      link: Page.Consulting as Page | null,
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.989-2.386l-.548-.547z"/></svg>
       )
@@ -117,7 +117,28 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ setCurrentPage }) => {
           </div>
           <div className="flex gap-4">
             <button className="px-8 py-4 bg-primary text-black font-black rounded-xl hover:shadow-[0_0_20px_rgba(255,217,0,0.5)] transition-all">Contactar ahora</button>
-            <button className="px-8 py-4 border border-white/10 text-white font-bold rounded-xl hover:bg-white/5">Ver Portafolio</button>
+            <button 
+              onClick={() => setCurrentPage(Page.Portfolio)}
+              className="px-8 py-4 border border-white/10 text-white font-bold rounded-xl hover:bg-white/5 transition-all"
+            >
+              Ver Portafolio
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Roadmap Banner ────────────────────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-6 pb-32">
+        <div className="bg-surface-dark border border-white/10 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row justify-between items-center gap-8 relative overflow-hidden group hover:border-primary/30 transition-all cursor-pointer" onClick={() => setCurrentPage(Page.Roadmap)}>
+          <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-primary/10 rounded-full blur-[80px] group-hover:bg-primary/20 transition-all" />
+          <div className="relative z-10 flex-1">
+            <h3 className="text-3xl font-black text-white mb-4">Descubre nuestro Roadmap de Ejecución</h3>
+            <p className="text-gray-400 text-lg">Explorá visualmente cómo estructuramos los proyectos desde el día 1 hasta el lanzamiento. Transparencia técnica y plazos claros.</p>
+          </div>
+          <div className="relative z-10">
+            <button className="px-8 py-4 bg-primary text-black font-black rounded-xl hover:scale-105 transition-all shadow-lg shadow-primary/20 whitespace-nowrap">
+              Ver Roadmap Completo
+            </button>
           </div>
         </div>
       </section>

@@ -32,5 +32,16 @@ export enum Page {
   Checkout = 'checkout',
   FullStack = 'fullstack',
   MobileApps = 'mobileapps',
-  Engineering = 'engineering'
+  Engineering = 'engineering',
+  Pricing = 'pricing',
+  Portfolio = 'portfolio',
+  PortfolioECommerce = 'portfolio-ecommerce',
+  PortfolioSaaS = 'portfolio-saas',
+  PortfolioRealEstate = 'portfolio-realestate',
+  PortfolioCreative = 'portfolio-creative',
+  PortfolioMotorcycles = 'portfolio-motorcycles',
+  Consulting = 'consulting',
+  Roadmap = 'roadmap',
+  RoadmapBuilder = 'roadmap-builder',
+  Sitemap = 'sitemap'
 }

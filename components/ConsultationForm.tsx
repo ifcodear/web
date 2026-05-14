@@ -3,9 +3,22 @@ import React, { useState } from 'react';
 const ConsultationForm: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  
+  // Math CAPTCHA state
+  const [mathA] = useState(Math.floor(Math.random() * 10) + 1);
+  const [mathB] = useState(Math.floor(Math.random() * 10) + 1);
+  const [mathAnswer, setMathAnswer] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (parseInt(mathAnswer) !== mathA + mathB) {
+      setErrorMessage('La respuesta matemática es incorrecta.');
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 4000);
+      return;
+    }
+
     const form = e.currentTarget;
     setStatus('sending');
     setErrorMessage('');
@@ -103,6 +116,18 @@ const ConsultationForm: React.FC = () => {
             placeholder="Describe brevemente tu idea..."
             className="w-full bg-background-dark border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all resize-none"
           ></textarea>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-gray-400">Verificación de seguridad: ¿Cuánto es {mathA} + {mathB}?</label>
+          <input
+            required
+            type="number"
+            value={mathAnswer}
+            onChange={(e) => setMathAnswer(e.target.value)}
+            placeholder="Tu respuesta..."
+            className="w-full bg-background-dark border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all"
+          />
         </div>
 
         <button

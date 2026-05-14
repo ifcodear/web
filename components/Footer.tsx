@@ -46,9 +46,15 @@ const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
           <h4 className="text-white font-bold mb-6">Compañía</h4>
           <ul className="space-y-4 text-sm text-gray-400">
             <li className="hover:text-primary transition-colors cursor-pointer" onClick={() => setCurrentPage(Page.Process)}>Nuestro Proceso</li>
-            <li className="hover:text-primary transition-colors cursor-pointer">Blog de Ingeniería</li>
-            <li className="hover:text-primary transition-colors cursor-pointer">Casos de Éxito</li>
-            <li className="hover:text-primary transition-colors cursor-pointer">Contacto</li>
+            <li className="text-gray-600 cursor-not-allowed">Blog de Ingeniería</li>
+            <li className="hover:text-primary transition-colors cursor-pointer" onClick={() => setCurrentPage(Page.Portfolio)}>Casos de Éxito</li>
+            <li className="hover:text-primary transition-colors cursor-pointer" onClick={() => {
+              setCurrentPage(Page.Home);
+              setTimeout(() => {
+                window.location.hash = 'home';
+                setTimeout(() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' }), 100);
+              }, 100);
+            }}>Contacto</li>
           </ul>
         </div>
 
@@ -94,9 +100,10 @@ const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
       <div className="max-w-7xl mx-auto px-6 pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
         <p>© 2026 ifcodear Inc. Todos los derechos reservados.</p>
         <div className="flex gap-6">
-          <span className="hover:text-white cursor-pointer transition-colors">Aviso Legal</span>
-          <span className="hover:text-white cursor-pointer transition-colors">Privacidad</span>
-          <span className="hover:text-white cursor-pointer transition-colors">Cookies</span>
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => setCurrentPage(Page.Sitemap)}>Sitemap</span>
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => setCurrentPage(Page.Sitemap)}>Aviso Legal</span>
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => setCurrentPage(Page.Sitemap)}>Privacidad</span>
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => setCurrentPage(Page.Sitemap)}>Cookies</span>
         </div>
       </div>
     </footer>

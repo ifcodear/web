@@ -9,6 +9,17 @@ import CheckoutPage from './pages/CheckoutPage';
 import FullStackPage from './pages/FullStackPage';
 import MobileAppsPage from './pages/MobileAppsPage';
 import EngineeringPage from './pages/EngineeringPage';
+import PricingPage from './pages/PricingPage';
+import PortfolioPage from './pages/PortfolioPage';
+import PortfolioECommerce from './pages/portfolio/PortfolioECommerce';
+import PortfolioSaaS from './pages/portfolio/PortfolioSaaS';
+import PortfolioRealEstate from './pages/portfolio/PortfolioRealEstate';
+import PortfolioCreative from './pages/portfolio/PortfolioCreative';
+import PortfolioMotorcycles from './pages/portfolio/PortfolioMotorcycles';
+import ConsultingPage from './pages/ConsultingPage';
+import RoadmapPage from './pages/RoadmapPage';
+import RoadmapBuilderPage from './pages/RoadmapBuilderPage';
+import SitemapPage from './pages/SitemapPage';
 import { Page, User } from './types';
 
 const App: React.FC = () => {
@@ -55,6 +66,28 @@ const App: React.FC = () => {
         return <MobileAppsPage />;
       case Page.Engineering:
         return <EngineeringPage />;
+      case Page.Pricing:
+        return <PricingPage />;
+      case Page.Portfolio:
+        return <PortfolioPage setCurrentPage={setCurrentPage} />;
+      case Page.PortfolioECommerce:
+        return <PortfolioECommerce setCurrentPage={setCurrentPage} />;
+      case Page.PortfolioSaaS:
+        return <PortfolioSaaS setCurrentPage={setCurrentPage} />;
+      case Page.PortfolioRealEstate:
+        return <PortfolioRealEstate setCurrentPage={setCurrentPage} />;
+      case Page.PortfolioCreative:
+        return <PortfolioCreative setCurrentPage={setCurrentPage} />;
+      case Page.PortfolioMotorcycles:
+        return <PortfolioMotorcycles setCurrentPage={setCurrentPage} />;
+      case Page.Consulting:
+        return <ConsultingPage />;
+      case Page.Roadmap:
+        return <RoadmapPage setCurrentPage={setCurrentPage} />;
+      case Page.RoadmapBuilder:
+        return <RoadmapBuilderPage />;
+      case Page.Sitemap:
+        return <SitemapPage setCurrentPage={setCurrentPage} />;
       case Page.Home:
       default:
         return <Home setCurrentPage={setCurrentPage} />;
