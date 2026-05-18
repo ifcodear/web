@@ -33,19 +33,21 @@ const SitemapPage: React.FC<SitemapPageProps> = ({ setCurrentPage }) => {
       links: [
         { label: "Desarrollo Full-Stack", value: Page.FullStack },
         { label: "Desarrollo Mobile (Apps)", value: Page.MobileApps },
-        { label: "Ingeniería de Software", value: Page.Engineering },
+        { label: "Desarrollo de Software", value: Page.Engineering },
         { label: "Consultoría Estratégica", value: Page.Consulting },
+        { label: "Infraestructura y Soporte IT", value: Page.ITSupport }
       ]
     },
     {
-      category: "Portafolio y Casos de Éxito",
+      category: "Portfolio",
       icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
       links: [
         { label: "Directorio de Portafolio", value: Page.Portfolio },
         { label: "Demo: E-commerce Premium", value: Page.PortfolioECommerce },
-        { label: "Demo: SaaS Dashboard", value: Page.PortfolioSaaS },
+        { label: "Demo: Plataforma Fintech", value: Page.PortfolioFintech },
         { label: "Demo: Real Estate Luxury", value: Page.PortfolioRealEstate },
         { label: "Demo: Agencia Creativa", value: Page.PortfolioCreative },
+        { label: "Demo: Concesionario Motos", value: Page.PortfolioMotorcycles },
       ]
     }
   ];

@@ -12,11 +12,12 @@ import EngineeringPage from './pages/EngineeringPage';
 import PricingPage from './pages/PricingPage';
 import PortfolioPage from './pages/PortfolioPage';
 import PortfolioECommerce from './pages/portfolio/PortfolioECommerce';
-import PortfolioSaaS from './pages/portfolio/PortfolioSaaS';
+import PortfolioFintech from './pages/portfolio/PortfolioFintech';
 import PortfolioRealEstate from './pages/portfolio/PortfolioRealEstate';
 import PortfolioCreative from './pages/portfolio/PortfolioCreative';
 import PortfolioMotorcycles from './pages/portfolio/PortfolioMotorcycles';
 import ConsultingPage from './pages/ConsultingPage';
+import ITSupportPage from './pages/ITSupportPage';
 import RoadmapPage from './pages/RoadmapPage';
 import RoadmapBuilderPage from './pages/RoadmapBuilderPage';
 import SitemapPage from './pages/SitemapPage';
@@ -72,8 +73,8 @@ const App: React.FC = () => {
         return <PortfolioPage setCurrentPage={setCurrentPage} />;
       case Page.PortfolioECommerce:
         return <PortfolioECommerce setCurrentPage={setCurrentPage} />;
-      case Page.PortfolioSaaS:
-        return <PortfolioSaaS setCurrentPage={setCurrentPage} />;
+      case Page.PortfolioFintech:
+        return <PortfolioFintech setCurrentPage={setCurrentPage} />;
       case Page.PortfolioRealEstate:
         return <PortfolioRealEstate setCurrentPage={setCurrentPage} />;
       case Page.PortfolioCreative:
@@ -82,6 +83,8 @@ const App: React.FC = () => {
         return <PortfolioMotorcycles setCurrentPage={setCurrentPage} />;
       case Page.Consulting:
         return <ConsultingPage />;
+      case Page.ITSupport:
+        return <ITSupportPage />;
       case Page.Roadmap:
         return <RoadmapPage setCurrentPage={setCurrentPage} />;
       case Page.RoadmapBuilder:

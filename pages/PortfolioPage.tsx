@@ -14,10 +14,10 @@ const PortfolioPage: React.FC<PortfolioPageProps> = ({ setCurrentPage }) => {
       route: Page.PortfolioECommerce,
     },
     {
-      title: 'SaaS B2B Dashboard',
-      tag: 'Fintech & Analytics',
-      img: '/port_saas_hero.png',
-      route: Page.PortfolioSaaS,
+      title: 'Plataforma Fintech Global',
+      tag: 'Finanzas & B2B',
+      img: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      route: Page.PortfolioFintech,
     },
     {
       title: 'Real Estate Luxury',

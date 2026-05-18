@@ -36,11 +36,12 @@ export enum Page {
   Pricing = 'pricing',
   Portfolio = 'portfolio',
   PortfolioECommerce = 'portfolio-ecommerce',
-  PortfolioSaaS = 'portfolio-saas',
+  PortfolioFintech = 'portfolio-fintech',
   PortfolioRealEstate = 'portfolio-realestate',
   PortfolioCreative = 'portfolio-creative',
   PortfolioMotorcycles = 'portfolio-motorcycles',
   Consulting = 'consulting',
+  ITSupport = 'it-support',
   Roadmap = 'roadmap',
   RoadmapBuilder = 'roadmap-builder',
   Sitemap = 'sitemap'

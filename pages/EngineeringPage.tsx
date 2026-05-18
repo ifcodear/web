@@ -164,12 +164,15 @@ const EngineeringPage: React.FC = () => {
                 <IconWhatsApp />
                 Hablar con un consultor técnico
               </a>
-              <a
-                href="#casos-de-exito"
-                id="hero-cta-portfolio"
+              <a 
+                href="#portfolio"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('portfolio')?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="inline-flex items-center gap-2 px-8 py-4 border border-white/15 text-white font-bold rounded-xl hover:bg-white/5 transition-all"
               >
-                Ver casos de éxito
+                Ver Portfolio
                 <IconArrow />
               </a>
             </div>
@@ -259,9 +262,9 @@ const EngineeringPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── PORTFOLIO / CASOS DE ÉXITO ────────────────────────────────────── */}
-      <section
-        id="casos-de-exito"
+      {/* ── PORTFOLIO ────────────────────────────────────── */}
+      <section 
+        id="portfolio"
         ref={portfolioSection.ref}
         className="max-w-7xl mx-auto px-6 py-24 lg:py-32"
         aria-labelledby="portfolio-heading"
@@ -273,7 +276,7 @@ const EngineeringPage: React.FC = () => {
             id="portfolio-heading"
             className="text-4xl lg:text-5xl font-black mt-4 text-white"
           >
-            Casos de <span className="text-primary">Éxito</span>
+            Nuestro <span className="text-primary">Portfolio</span>
           </h2>
           <p className="text-gray-400 mt-4 max-w-xl mx-auto text-lg">
             Software empresarial que transformó operaciones y generó resultados medibles.

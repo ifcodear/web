@@ -47,7 +47,7 @@ const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
           <ul className="space-y-4 text-sm text-gray-400">
             <li className="hover:text-primary transition-colors cursor-pointer" onClick={() => setCurrentPage(Page.Process)}>Nuestro Proceso</li>
             <li className="text-gray-600 cursor-not-allowed">Blog de Ingeniería</li>
-            <li className="hover:text-primary transition-colors cursor-pointer" onClick={() => setCurrentPage(Page.Portfolio)}>Casos de Éxito</li>
+            <li className="hover:text-primary transition-colors cursor-pointer" onClick={() => setCurrentPage(Page.Portfolio)}>Portfolio</li>
             <li className="hover:text-primary transition-colors cursor-pointer" onClick={() => {
               setCurrentPage(Page.Home);
               setTimeout(() => {

@@ -74,7 +74,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onLo
         </nav>
 
         <div className="flex items-center gap-4">
-          {user ? (
+          {/* 
+            TODO: El login con Google es actualmente solo una maqueta visual (mockup).
+            Se ha ocultado temporalmente hasta que se implemente el backend real y el Portal de Clientes.
+            
+            user ? (
             <div className="flex items-center gap-3 pl-4 border-l border-white/10">
               <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full border border-primary" />
               <button
@@ -97,7 +101,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onLo
               </svg>
               Google Login
             </button>
-          )}
+          )*/}
           <button
             onClick={() => setCurrentPage(Page.RoadmapBuilder)}
             className="px-6 py-2.5 bg-primary text-black text-sm font-bold rounded-lg shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
