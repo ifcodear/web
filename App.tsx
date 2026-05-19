@@ -49,6 +49,25 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentPage]);
 
+  // Track page views in Google Ads on page change
+  useEffect(() => {
+    const pagePath = window.location.hash || '#/';
+    const pageTitle = `ifcodear | ${currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}`;
+
+    if (typeof (window as any).gtag === 'function') {
+      (window as any).gtag('config', 'AW-18175127365', {
+        page_path: pagePath,
+        page_title: pageTitle,
+      });
+      
+      (window as any).gtag('event', 'page_view', {
+        page_path: pagePath,
+        page_title: pageTitle,
+        send_to: 'AW-18175127365'
+      });
+    }
+  }, [currentPage]);
+
   const handleLogin = (userData: User) => {
     setUser(userData);
   };
