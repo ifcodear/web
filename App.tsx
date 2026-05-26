@@ -49,11 +49,12 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentPage]);
 
-  // Track page views in Google Ads on page change
+  // Track page views in Google Ads and Google Tag Manager on page change
   useEffect(() => {
     const pagePath = window.location.hash || '#/';
     const pageTitle = `ifcodear | ${currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}`;
 
+    // Track in Google Ads
     if (typeof (window as any).gtag === 'function') {
       (window as any).gtag('config', 'AW-18175127365', {
         page_path: pagePath,
@@ -64,6 +65,16 @@ const App: React.FC = () => {
         page_path: pagePath,
         page_title: pageTitle,
         send_to: 'AW-18175127365'
+      });
+    }
+
+    // Track in Google Tag Manager dataLayer
+    const dataLayer = (window as any).dataLayer;
+    if (Array.isArray(dataLayer)) {
+      dataLayer.push({
+        event: 'virtualPageView',
+        page_path: pagePath,
+        page_title: pageTitle,
       });
     }
   }, [currentPage]);
