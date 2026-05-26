@@ -35,7 +35,7 @@ const ITSupportPage: React.FC = () => {
               Cotizar Servicio
             </a>
             <a
-              href={`mailto:${EMAIL}?subject=Consulta Soporte IT`}
+              href={`mailto:${EMAIL}?subject=Solicito acesoramiento`}
               className="px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all flex items-center gap-3"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
