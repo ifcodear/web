@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reciclaje Rauch - Juego de Navegador</title>
+  
+  <!-- Fuente moderna de Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    /* -------------------------------------------------------------
+       DISEÑO Y ESTILOS PRINCIPALES (Aesthetics & Theme)
+       ------------------------------------------------------------- */
+    :root {
+      --primary: #22c55e;       /* Verde Vivo de Reciclaje */
+      --primary-dark: #15803d;  /* Verde Oscuro */
+      --primary-light: #4ade80; /* Verde Brillante */
+      --orange: #f97316;        /* Combustible / Alerta */
+      --blue: #3b82f6;          /* Centro de Reciclado */
+      --dark: #0f172a;          /* Fondo UI Oscuro */
+      --text: #f8fafc;          /* Texto Claro */
+      --glass: rgba(15, 23, 42, 0.75); /* Efecto Glassmorphism */
+      --border-glass: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: #0b0f19;
+      color: var(--text);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* CONTENEDOR PRINCIPAL DEL JUEGO */
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* PANEL SUPERIOR (HUD) */
+    #hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 75px;
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 2px solid var(--border-glass);
+      display: grid;
+      grid-template-columns: 1fr 1.5fr 1fr;
+      align-items: center;
+      padding: 0 24px;
+      z-index: 10;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .hud-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hud-left {
+      justify-content: flex-start;
+    }
+
+    .hud-center {
+      justify-content: center;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .hud-right {
+      justify-content: flex-end;
+      gap: 20px;
+    }
+
+    /* ETIQUETAS Y VALORES */
+    .hud-label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #94a3b8;
+    }
+
+    .hud-value {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    /* BARRA DE COMBUSTIBLE */
+    .fuel-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 180px;
+    }
+
+    .fuel-bar-outer {
+      width: 100%;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .fuel-bar-inner {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ea580c, #f97316, #fb923c);
+      box-shadow: 0 0 10px var(--orange);
+      border-radius: 99px;
+      transition: width 0.1s linear, background 0.3s;
+    }
+
+    .fuel-low {
+      background: linear-gradient(90deg, #dc2626, #ef4444, #f87171) !important;
+      box-shadow: 0 0 15px #ef4444 !important;
+      animation: pulse-fuel 0.8s infinite;
+    }
+
+    @keyframes pulse-fuel {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* BODEGA (CARGO) Y TIPO ACTIVO */
+    .cargo-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cargo-slot {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px dashed rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all 0.2s ease;
+    }
+
+    .cargo-slot.filled {
+      background: rgba(34, 197, 94, 0.2);
+      border: 2px solid var(--primary);
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+      transform: scale(1.05);
+    }
+
+    .active-type-badge {
+      font-size: 0.9rem;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 4px 12px;
+      border-radius: 99px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* CANVAS */
+    canvas {
+      display: block;
+      background: #1e293b;
+      margin: 0 auto;
+    }
+
+    /* PANTALLAS SUPERPUESTAS (Overlays) */
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(8, 12, 21, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 20px;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay.hidden {
+      display: none;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .panel-card {
+      background: var(--glass);
+      border: 2px solid var(--border-glass);
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 550px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes scaleUp {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* BOTONES */
+    .btn {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #000;
+      border: none;
+      padding: 14px 28px;
+      font-size: 1.1rem;
+      font-weight: 900;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(34, 197, 94, 0.5);
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      box-shadow: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 20px rgba(255, 255, 255, 0.1);
+    }
+
+    /* ENTRADAS DE TEXTO */
+    .input-field {
+      width: 100%;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 20px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .input-field:focus {
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+    }
+
+    /* TABLA DE LIDERES */
+    .leaderboard-table {
+      width: 100%;
+      margin: 20px 0;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .leaderboard-table th, .leaderboard-table td {
+      padding: 10px 14px;
+      font-size: 0.95rem;
+    }
+
+    .leaderboard-table th {
+      border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+      color: #94a3b8;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+    }
+
+    .leaderboard-table tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .leaderboard-table tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .leaderboard-table tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .leaderboard-table td {
+      font-weight: 600;
+    }
+
+    .leaderboard-table tr:first-child td {
+      color: var(--primary-light);
+      font-weight: 800;
+    }
+
+    /* DETALLES DE PANTALLA DE INICIO */
+    .instructions-card {
+      text-align: left;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 20px 0;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+    }
+
+    .instructions-card ul {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+
+    .instructions-card li {
+      margin-bottom: 6px;
+    }
+
+    /* TITULOS EMOJI */
+    .emoji-title {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      display: inline-block;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .title-text {
+      font-size: 2.2rem;
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .green-gradient-text {
+      background: linear-gradient(135deg, var(--primary-light), var(--primary-dark)) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+    }
+
+    .score-banner {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: #fff;
+      margin: 15px 0;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+
+    .local-warning {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      background: rgba(249, 115, 22, 0.1);
+      border: 1px dashed rgba(249, 115, 22, 0.3);
+      padding: 6px 12px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    
+    <!-- ── PANEL SUPERIOR (HUD) ─────────────────────────────────────────────── -->
+    <div id="hud">
+      <!-- Izquierda: Barra de combustible -->
+      <div class="hud-section hud-left">
+        <div class="fuel-container">
+          <div class="hud-label" style="display: flex; justify-content: space-between;">
+            <span>Combustible</span>
+            <span id="fuel-text">100%</span>
+          </div>
+          <div class="fuel-bar-outer">
+            <div id="fuel-bar" class="fuel-bar-inner"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Centro: Tipo de basura activo y bodega -->
+      <div class="hud-section hud-center">
+        <div id="active-type-display" class="active-type-badge">
+          <span>Cargando...</span>
+        </div>
+        <div class="cargo-container" id="cargo-container">
+          <!-- Generado dinámicamente: 5 casillas -->
+          <div class="cargo-slot" id="slot-0"></div>
+          <div class="cargo-slot" id="slot-1"></div>
+          <div class="cargo-slot" id="slot-2"></div>
+          <div class="cargo-slot" id="slot-3"></div>
+          <div class="cargo-slot" id="slot-4"></div>
+        </div>
+      </div>
+      
+      <!-- Derecha: Puntaje y nivel actual -->
+      <div class="hud-section hud-right">
+        <div>
+          <div class="hud-label" style="text-align: right;">Etapa</div>
+          <div class="hud-value" id="hud-level" style="text-align: right;">1/5</div>
+        </div>
+        <div style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 20px;">
+          <div class="hud-label" style="text-align: right;">Puntaje</div>
+          <div class="hud-value" id="hud-score" style="text-align: right; color: var(--primary-light);">0000</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ── CANVAS DEL JUEGO ────────────────────────────────────────────────── -->
+    <canvas id="gameCanvas" width="1200" height="800"></canvas>
+    
+    <!-- ── PANTALLA 1: BIENVENIDA / INICIO ──────────────────────────────────── -->
+    <div id="screen-welcome" class="overlay">
+      <div class="panel-card">
+        <span class="emoji-title">♻️</span>
+        <h1 class="title-text"><span class="green-gradient-text">Reciclaje Rauch</span></h1>
+        <p style="color: #94a3b8; font-size: 1.1rem; font-weight: 600;">¡Mantengamos limpia nuestra casa común!</p>
+        
+        <div class="instructions-card">
+          <strong>💡 Cómo jugar:</strong>
+          <ul>
+            <li>Controlá el <strong>camión recolector naranja</strong> con las <strong>flechas del teclado</strong> (o <strong>WASD</strong>).</li>
+            <li>Recogé únicamente la basura del <strong>tipo activo</strong> mostrada en el panel superior.</li>
+            <li>¡Cuidado con los <strong>obstáculos marrones</strong>! Si chocás, perdés inmediatamente.</li>
+            <li>Llevá la basura recolectada al <strong>Centro de Reciclado (esquina inferior derecha)</strong> para sumar puntos y <strong>recargar combustible ⛽</strong>.</li>
+            <li>¡No dejes que el tanque de combustible se vacíe!</li>
+            <li>Limpiá las 5 etapas de residuos para ganar el juego y salvar a Rauch.</li>
+          </ul>
+        </div>
+        
+        <button class="btn" id="btn-start-game">Comenzar a Jugar</button>
+      </div>
+    </div>
+    
+    <!-- ── PANTALLA 2: FIN DEL JUEGO (GAME OVER) ────────────────────────────── -->
+    <div id="screen-gameover" class="overlay hidden">
+      <div class="panel-card">
+        <span class="emoji-title">💥</span>
+        <h1 class="title-text" style="color: #ef4444;"><span id="gameover-title">Fin del Juego</span></h1>
+        <p id="gameover-reason" style="color: #cbd5e1; font-size: 1.1rem; margin-bottom: 20px;">Motivo de la derrota</p>
+        
+        <div class="score-banner" id="gameover-score">Puntaje: 0</div>
+        
+        <div id="save-score-section">
+          <input type="text" id="player-name" class="input-field" placeholder="Ingresá tu nombre" maxlength="15">
+          <div id="local-warning-msg" class="local-warning hidden">
+            Guardando localmente (JSONBin no configurado).
+          </div>
+          <button class="btn" id="btn-save-score" style="width: 100%;">Guardar Puntaje</button>
+        </div>
+        
+        <button class="btn btn-secondary" id="btn-skip-save" style="margin-top: 12px; width: 100%;">Ver tabla de líderes</button>
+      </div>
+    </div>
+    
+    <!-- ── PANTALLA 3: TABLA DE LÍDERES (HIGH SCORES) ───────────────────────── -->
+    <div id="screen-leaderboard" class="overlay hidden">
+      <div class="panel-card" style="max-width: 600px;">
+        <span class="emoji-title" style="font-size: 2.5rem;">🏆</span>
+        <h1 class="title-text">Líderes de Rauch</h1>
+        <p style="color: #94a3b8;">Los mejores recolectores de la localidad</p>
+        
+        <div style="max-height: 250px; overflow-y: auto; margin: 15px 0;">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Puesto</th>
+                <th>Nombre</th>
+                <th>Puntaje</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+              <!-- Se completa dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+        
+        <button class="btn" id="btn-restart" style="width: 100%; margin-top: 10px;">Jugar de Nuevo</button>
+      </div>
+    </div>
+    
+    <!-- ── PANTALLA 4: VICTORIA ──────────────────────────────────────────────── -->
+    <div id="screen-victory" class="overlay hidden">
+      <div class="panel-card">
+        <span class="emoji-title">🎉</span>
+        <h1 class="title-text"><span class="green-gradient-text">¡Ciudad Limpia!</span></h1>
+        <p style="color: #cbd5e1; font-size: 1.2rem; line-height: 1.6;">
+          ¡Felicitaciones! Has recolectado y reciclado todos los residuos. ¡Rauch está limpia y libre de contaminación gracias a vos! 🌳✨
+        </p>
+        
+        <div class="score-banner" id="victory-score" style="color: var(--primary-light);">Puntaje Final: 0</div>
+        
+        <div id="victory-save-section">
+          <input type="text" id="victory-player-name" class="input-field" placeholder="Tu nombre campeón/a" maxlength="15">
+          <button class="btn" id="btn-victory-save" style="width: 100%;">Guardar y Registrar Hazaña</button>
+        </div>
+        
+        <button class="btn btn-secondary" id="btn-victory-skip" style="margin-top: 12px; width: 100%;">Ver tabla de líderes</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── CÓDIGO DEL JUEGO (GAME ENGINE & LOGIC) ────────────────────────────── -->
+  <script>
+    // =========================================================================
+    // ⚙️ CONSTANTES DE CONFIGURACIÓN DE JSONBIN.IO
+    // Reemplaza estas cadenas con tus credenciales de JSONBin.io si deseas
+    // almacenamiento online. De lo contrario, se guardará en LocalStorage.
+    // =========================================================================
+    const JSONBIN_BIN_ID = "TU_BIN_ID_AQUI";
+    const JSONBIN_API_KEY = "TU_API_KEY_AQUI";
+
+    // =========================================================================
+    // 🎧 MOTOR DE AUDIO CON WEB AUDIO API
+    // =========================================================================
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      if (type === 'pickup') {
+        // Sonido retro de coleccionar objeto (arpegio rápido ascendente)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.setValueAtTime(783.99, now + 0.08); // G5
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'delivery') {
+        // Sonido de entrega exitosa (fanfarria alegre triunfal)
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.setValueAtTime(659.25, now + 0.07); // E5
+        osc.frequency.setValueAtTime(783.99, now + 0.14); // G5
+        osc.frequency.setValueAtTime(1046.50, now + 0.21); // C6
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      } else if (type === 'refill') {
+        // Sonido de carga de combustible (láser futurista ascendente)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(700, now + 0.35);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } else if (type === 'crash') {
+        // Sonido de choque (explosión de ruido de baja frecuencia)
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(30, now + 0.5);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      } else if (type === 'victory') {
+        // Celebración gloriosa
+        const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50];
+        notes.forEach((freq, idx) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          o.type = 'square';
+          o.frequency.setValueAtTime(freq, now + idx * 0.1);
+          g.gain.setValueAtTime(0.05, now + idx * 0.1);
+          g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.25);
+          o.start(now + idx * 0.1);
+          o.stop(now + idx * 0.1 + 0.25);
+        });
+      }
+    }
+
+    // =========================================================================
+    // 🗺️ SISTEMA DE BASE DE DATOS Y LÍDERES (JSONBin / LocalStorage)
+    // =========================================================================
+    const isBinConfigured = () => {
+      return (JSONBIN_BIN_ID !== "TU_BIN_ID_AQUI" && JSONBIN_BIN_ID.trim() !== "" &&
+              JSONBIN_API_KEY !== "TU_API_KEY_AQUI" && JSONBIN_API_KEY.trim() !== "");
+    };
+
+    async function getLeaderboard() {
+      if (!isBinConfigured()) {
+        const local = localStorage.getItem("reciclaje_rauch_scores");
+        return local ? JSON.parse(local) : [];
+      }
+      try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+          headers: { "X-Access-Key": JSONBIN_API_KEY }
+        });
+        if (!response.ok) throw new Error("Error leyendo JSONBin");
+        const resData = await response.json();
+        let scores = Array.isArray(resData.record) ? resData.record : (resData.record.scores || []);
+        scores.sort((a, b) => b.puntaje - a.puntaje);
+        return scores;
+      } catch (err) {
+        console.error("Error al conectar online, usando local:", err);
+        const local = localStorage.getItem("reciclaje_rauch_scores");
+        return local ? JSON.parse(local) : [];
+      }
+    }
+
+    async function saveScore(name, score) {
+      const newRecord = {
+        nombre: name.trim() || "Anónimo",
+        puntaje: score,
+        fecha: new Date().toLocaleDateString("es-AR")
+      };
+
+      if (!isBinConfigured()) {
+        let scores = [];
+        try {
+          const local = localStorage.getItem("reciclaje_rauch_scores");
+          scores = local ? JSON.parse(local) : [];
+        } catch (e) {}
+        scores.push(newRecord);
+        scores.sort((a, b) => b.puntaje - a.puntaje);
+        scores = scores.slice(0, 10); // Conservar top 10
+        localStorage.setItem("reciclaje_rauch_scores", JSON.stringify(scores));
+        return scores;
+      }
+
+      try {
+        // 1. Obtener lista actual
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+          headers: { "X-Access-Key": JSONBIN_API_KEY }
+        });
+        let scores = [];
+        if (response.ok) {
+          const resData = await response.json();
+          scores = Array.isArray(resData.record) ? resData.record : (resData.record.scores || []);
+        }
+        
+        // 2. Agregar y ordenar
+        scores.push(newRecord);
+        scores.sort((a, b) => b.puntaje - a.puntaje);
+        scores = scores.slice(0, 10);
+
+        // 3. Guardar online
+        const saveResponse = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Access-Key": JSONBIN_API_KEY
+          },
+          body: JSON.stringify({ scores: scores })
+        });
+        if (!saveResponse.ok) throw new Error("Error en PUT a JSONBin");
+        return scores;
+      } catch (err) {
+        console.error("Error al guardar online, guardando local:", err);
+        let scores = [];
+        try {
+          const local = localStorage.getItem("reciclaje_rauch_scores");
+          scores = local ? JSON.parse(local) : [];
+        } catch (e) {}
+        scores.push(newRecord);
+        scores.sort((a, b) => b.puntaje - a.puntaje);
+        scores = scores.slice(0, 10);
+        localStorage.setItem("reciclaje_rauch_scores", JSON.stringify(scores));
+        return scores;
+      }
+    }
+
+    // =========================================================================
+    // 🎮 MOTOR Y CICLO DEL JUEGO
+    // =========================================================================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Constantes lógicas de resolución (Aspect Ratio Fijo 1200x800)
+    const LOGICAL_WIDTH = 1200;
+    const LOGICAL_HEIGHT = 800;
+
+    // Tipos de basura
+    const WASTE_TYPES = [
+      { name: "Cartón", emoji: "📦", color: "#8b5a2b", activeColor: "#b07d50" },
+      { name: "Plástico", emoji: "🧴", color: "#eab308", activeColor: "#facc15" },
+      { name: "Vidrio", emoji: "🍾", color: "#06b6d4", activeColor: "#22d3ee" },
+      { name: "Metal", emoji: "🥫", color: "#64748b", activeColor: "#94a3b8" },
+      { name: "Eléctrico", emoji: "💡", color: "#a855f7", activeColor: "#c084fc" }
+    ];
+
+    // Variables globales de estado
+    let gameState = 'start'; // 'start', 'playing', 'gameover', 'victory', 'leaderboard'
+    let score = 0;
+    let fuel = 100;
+    let activeTypeIndex = 0; // 0: Cartón, 1: Plástico, etc.
+    let levelProgress = 1;   // 1 a 5
+
+    // Jugador (Camión)
+    const player = {
+      x: 35,
+      y: 53,
+      w: 28,
+      h: 28,
+      speed: 3.5,
+      angle: 0, // En radianes para rotar el camión visualmente
+      targetAngle: 0,
+      bodega: [], // Almacena tipos recolectados
+      maxBodega: 5,
+      moving: false
+    };
+
+    // Mapa
+    const blocks = [];
+    const blockWidth = 100;
+    const blockHeight = 100;
+    const streetWidth = 45;
+    const marginX = 25;
+    const marginY = 45;
+    
+    // Inicializar bloques (Manzanas de Rauch)
+    const blocksCols = 8;
+    const blocksRows = 5;
+
+    for (let r = 0; r < blocksRows; r++) {
+      for (let c = 0; c < blocksCols; c++) {
+        const bx = marginX + c * (blockWidth + streetWidth);
+        const by = marginY + r * (blockHeight + streetWidth);
+        
+        // Plaza Central: Manzanas c=3,4 y r=2 (justo en el medio)
+        const isPlaza = (c === 3 || c === 4) && (r === 2);
+        
+        // Centro de Reciclado: Esquina inferior derecha (c=7, r=4)
+        const isRecycling = (c === 7 && r === 4);
+        
+        blocks.push({
+          x: bx,
+          y: by,
+          w: blockWidth,
+          h: blockHeight,
+          col: c,
+          row: r,
+          isPlaza: isPlaza,
+          isRecycling: isRecycling
+        });
+      }
+    }
+
+    // Listas dinámicas por partida
+    let obstacles = [];
+    let garbage = [];
+    let justDelivered = false; // Flag para reproducir sonido de entrega una sola vez por visita
+    
+    // Entrada de teclado
+    const keys = {};
+
+    window.addEventListener('keydown', e => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+        e.preventDefault();
+      }
+      keys[e.key] = true;
+    });
+
+    window.addEventListener('keyup', e => {
+      keys[e.key] = false;
+    });
+
+    // Ajustar escala de Canvas a cualquier ventana de navegador (Responsive scaling)
+    let canvasScale = 1;
+    function resize() {
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+
+      // Calcular ratios
+      const scaleX = windowWidth / LOGICAL_WIDTH;
+      const scaleY = windowHeight / LOGICAL_HEIGHT;
+      
+      // Tomar el menor factor de escala para mantener proporción (letterboxing)
+      canvasScale = Math.min(scaleX, scaleY);
+      
+      canvas.style.width = (LOGICAL_WIDTH * canvasScale) + "px";
+      canvas.style.height = (LOGICAL_HEIGHT * canvasScale) + "px";
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    // =========================================================================
+    // ⚙️ LÓGICA INTERNA DE COLISIÓN (Slide y Obstáculos)
+    // =========================================================================
+    function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
+      return (x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2);
+    }
+
+    function checkCollision(x, y) {
+      // 1. Limites del mapa
+      if (x < 10 || x + player.w > LOGICAL_WIDTH - 10 || y < 10 || y + player.h > LOGICAL_HEIGHT - 10) {
+        return "border";
+      }
+
+      // 2. Colisión con Manzanas (excluyendo el Centro de Reciclado para permitir estacionar justo al lado en calles adyacentes)
+      for (let block of blocks) {
+        // El camión no puede subirse a ninguna manzana
+        if (rectsOverlap(x, y, player.w, player.h, block.x, block.y, block.w, block.h)) {
+          return "block";
+        }
+      }
+
+      // 3. Colisión con Obstáculos
+      for (let obs of obstacles) {
+        if (rectsOverlap(x, y, player.w, player.h, obs.x, obs.y, obs.w, obs.h)) {
+          return "obstacle";
+        }
+      }
+
+      return false;
+    }
+
+    // Generador aleatorio de obstáculos en calles
+    function generateObstacles() {
+      obstacles = [];
+      const numObstacles = Math.floor(Math.random() * 5) + 8; // Entre 8 y 12
+      
+      let attempts = 0;
+      while (obstacles.length < numObstacles && attempts < 200) {
+        attempts++;
+        const ow = Math.random() > 0.5 ? 40 : 25;
+        const oh = ow === 40 ? 25 : 40;
+        
+        // Puntos aleatorios del mapa
+        const ox = Math.floor(Math.random() * (LOGICAL_WIDTH - 100)) + 50;
+        const oy = Math.floor(Math.random() * (LOGICAL_HEIGHT - 100)) + 50;
+
+        // Comprobaciones
+        // A) Debe estar en una calle (no solapar con manzanas)
+        let inStreet = true;
+        for (let block of blocks) {
+          if (rectsOverlap(ox - 5, oy - 5, ow + 10, oh + 10, block.x, block.y, block.w, block.h)) {
+            inStreet = false;
+            break;
+          }
+        }
+        if (!inStreet) continue;
+
+        // B) No debe estar cerca de la zona de inicio del camión (arriba izquierda)
+        const distToStart = Math.hypot(ox - 35, oy - 53);
+        if (distToStart < 150) continue;
+
+        // C) No debe bloquear por completo la zona de descarga del centro de reciclado (abajo derecha)
+        const distToRecycling = Math.hypot(ox - 1040, oy - 625);
+        if (distToRecycling < 160) continue;
+
+        // D) No debe solapar con otros obstáculos
+        let overlapOthers = false;
+        for (let existing of obstacles) {
+          if (rectsOverlap(ox - 10, oy - 10, ow + 20, oh + 20, existing.x, existing.y, existing.w, existing.h)) {
+            overlapOthers = true;
+            break;
+          }
+        }
+        if (overlapOthers) continue;
+
+        // Si pasó todos los filtros, guardar obstáculo
+        obstacles.push({ x: ox, y: oy, w: ow, h: oh });
+      }
+    }
+
+    // Dispersión aleatoria de basura sobre las calles
+    function generateGarbage() {
+      garbage = [];
+      
+      // Spawneamos 5 items para cada uno de los 5 tipos de basura (Total: 25)
+      for (let t = 0; t < 5; t++) {
+        let count = 0;
+        let attempts = 0;
+        while (count < 5 && attempts < 300) {
+          attempts++;
+          const gx = Math.floor(Math.random() * (LOGICAL_WIDTH - 80)) + 40;
+          const gy = Math.floor(Math.random() * (LOGICAL_HEIGHT - 80)) + 40;
+          
+          // Debe estar estrictamente en las calles
+          let inStreet = true;
+          for (let block of blocks) {
+            if (rectsOverlap(gx - 2, gy - 2, 28, 28, block.x, block.y, block.w, block.h)) {
+              inStreet = false;
+              break;
+            }
+          }
+          if (!inStreet) continue;
+
+          // No superponer con obstáculos
+          let inObstacle = false;
+          for (let obs of obstacles) {
+            if (rectsOverlap(gx - 2, gy - 2, 28, 28, obs.x, obs.y, obs.w, obs.h)) {
+              inObstacle = false;
+              break;
+            }
+          }
+          if (inObstacle) continue;
+
+          // No muy cerca del Centro de Reciclado (para obligar al jugador a circular)
+          const distToRecycling = Math.hypot(gx - 1040, gy - 625);
+          if (distToRecycling < 140) continue;
+
+          // No superponer con otra basura
+          let overlapOthers = false;
+          for (let existing of garbage) {
+            if (Math.hypot(gx - existing.x, gy - existing.y) < 40) {
+              overlapOthers = true;
+              break;
+            }
+          }
+          if (overlapOthers) continue;
+
+          // Guardar basura
+          garbage.push({
+            x: gx,
+            y: gy,
+            w: 24,
+            h: 24,
+            type: t,
+            collected: false,
+            emoji: WASTE_TYPES[t].emoji,
+            color: WASTE_TYPES[t].color
+          });
+          count++;
+        }
+      }
+    }
+
+    // =========================================================================
+    // 🔄 INICIALIZACIÓN DE PARTIDA
+    // =========================================================================
+    function startNewGame() {
+      score = 0;
+      fuel = 100;
+      activeTypeIndex = 0;
+      levelProgress = 1;
+      
+      player.x = 35;
+      player.y = 53;
+      player.angle = 0;
+      player.targetAngle = 0;
+      player.bodega = [];
+      player.moving = false;
+      
+      justDelivered = false;
+
+      generateObstacles();
+      generateGarbage();
+      
+      updateHUD();
+      
+      gameState = 'playing';
+      hideAllOverlays();
+    }
+
+    function updateHUD() {
+      document.getElementById('hud-score').innerText = String(score).padStart(4, '0');
+      document.getElementById('hud-level').innerText = levelProgress + "/5";
+      document.getElementById('fuel-text').innerText = Math.round(fuel) + "%";
+      
+      const fuelBar = document.getElementById('fuel-bar');
+      fuelBar.style.width = fuel + "%";
+      
+      if (fuel < 25) {
+        fuelBar.classList.add('fuel-low');
+      } else {
+        fuelBar.classList.remove('fuel-low');
+      }
+
+      // Tipo activo
+      const activeType = WASTE_TYPES[activeTypeIndex];
+      const display = document.getElementById('active-type-display');
+      display.style.borderColor = activeType.activeColor;
+      display.innerHTML = `<span style="font-size: 1.1rem;">${activeType.emoji}</span> Recolectando: <strong style="color:${activeType.activeColor}">${activeType.name}</strong>`;
+
+      // Bodega
+      for (let i = 0; i < player.maxBodega; i++) {
+        const slot = document.getElementById(`slot-${i}`);
+        if (i < player.bodega.length) {
+          slot.classList.add('filled');
+          slot.innerText = activeType.emoji;
+          slot.style.backgroundColor = activeType.color + "44";
+          slot.style.borderColor = activeType.activeColor;
+        } else {
+          slot.classList.remove('filled');
+          slot.innerText = "";
+          slot.style.backgroundColor = "";
+          slot.style.borderColor = "";
+        }
+      }
+    }
+
+    // =========================================================================
+    // ⚙️ BUCLE DE ACTUALIZACIÓN DEL JUGADOR (UPDATE LOOP)
+    // =========================================================================
+    function update() {
+      if (gameState !== 'playing') return;
+
+      let dx = 0;
+      let dy = 0;
+      player.moving = false;
+
+      // Lectura de controles (Teclas de flechas y WASD)
+      if (keys['ArrowUp'] || keys['w'] || keys['W']) {
+        dy = -player.speed;
+        player.targetAngle = -Math.PI / 2;
+        player.moving = true;
+      } else if (keys['ArrowDown'] || keys['s'] || keys['S']) {
+        dy = player.speed;
+        player.targetAngle = Math.PI / 2;
+        player.moving = true;
+      }
+
+      if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+        dx = -player.speed;
+        player.targetAngle = Math.PI;
+        player.moving = true;
+      } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+        dx = player.speed;
+        player.targetAngle = 0;
+        player.moving = true;
+      }
+
+      // Ajustes diagonales de ángulo
+      if (dx > 0 && dy > 0) player.targetAngle = Math.PI / 4;
+      else if (dx > 0 && dy < 0) player.targetAngle = -Math.PI / 4;
+      else if (dx < 0 && dy > 0) player.targetAngle = 3 * Math.PI / 4;
+      else if (dx < 0 && dy < 0) player.targetAngle = -3 * Math.PI / 4;
+
+      // Suavizar rotación del camión
+      let diff = player.targetAngle - player.angle;
+      // Normalizar rango (-PI a PI) para evitar rotaciones de 360 grados innecesarias
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      player.angle += diff * 0.25;
+
+      // Movimiento con deslizamiento inteligente en ejes X e Y por separado (Slick Sliding)
+      if (player.moving) {
+        // Reducir consumo de combustible mientras conduce
+        fuel -= 0.055;
+        if (fuel <= 0) {
+          fuel = 0;
+          triggerGameOver("¡Te quedaste sin combustible!");
+          return;
+        }
+
+        // Intento de mover en X
+        if (dx !== 0) {
+          const nextX = player.x + dx;
+          const colResult = checkCollision(nextX, player.y);
+          if (colResult === false) {
+            player.x = nextX;
+          } else if (colResult === "obstacle") {
+            triggerGameOver("¡Chocaste contra un obstáculo!");
+            return;
+          }
+        }
+
+        // Intento de mover en Y
+        if (dy !== 0) {
+          const nextY = player.y + dy;
+          const colResult = checkCollision(player.x, nextY);
+          if (colResult === false) {
+            player.y = nextY;
+          } else if (colResult === "obstacle") {
+            triggerGameOver("¡Chocaste contra un obstáculo!");
+            return;
+          }
+        }
+
+        updateHUD();
+      }
+
+      // ── VERIFICACIÓN A: RECOLECCIÓN DE BASURA ──────────────────────────────
+      for (let item of garbage) {
+        if (!item.collected && item.type === activeTypeIndex) {
+          // Colisión camión - residuo activo
+          if (rectsOverlap(player.x, player.y, player.w, player.h, item.x, item.y, item.w, item.h)) {
+            if (player.bodega.length < player.maxBodega) {
+              item.collected = true;
+              player.bodega.push(activeTypeIndex);
+              playSound('pickup');
+              updateHUD();
+            }
+          }
+        }
+      }
+
+      // ── VERIFICACIÓN B: LLEGADA AL CENTRO DE RECICLADO ──────────────────────
+      // El centro de reciclado está en la esquina inferior derecha.
+      // Definimos la zona de descarga activa (las calles colindantes a la manzana inferior derecha: c=7, r=4)
+      const recyclingZoneX = 990;
+      const recyclingZoneY = 575;
+      
+      const inRecyclingZone = (player.x + player.w / 2 > recyclingZoneX && player.y + player.h / 2 > recyclingZoneY);
+
+      if (inRecyclingZone) {
+        if (!justDelivered) {
+          justDelivered = true;
+          let refilled = false;
+
+          // A) Vaciar bodega y sumar puntos
+          if (player.bodega.length > 0) {
+            const countDelivered = player.bodega.length;
+            const pointsAdded = countDelivered * 10;
+            score += pointsAdded;
+            player.bodega = [];
+            playSound('delivery');
+            refilled = true;
+          }
+
+          // B) Cargar combustible al máximo
+          if (fuel < 99.5) {
+            fuel = 100;
+            playSound('refill');
+            refilled = true;
+          }
+
+          if (refilled) {
+            updateHUD();
+          }
+
+          // C) Verificar avance de etapa / Victoria
+          // ¿Queda basura activa en el mapa?
+          const activeGarbageLeft = garbage.filter(g => g.type === activeTypeIndex && !g.collected).length;
+          if (activeGarbageLeft === 0 && player.bodega.length === 0) {
+            // Avanzamos al siguiente tipo de basura
+            activeTypeIndex++;
+            levelProgress++;
+            if (activeTypeIndex >= 5) {
+              triggerVictory();
+            } else {
+              updateHUD();
+            }
+          }
+        }
+      } else {
+        // Habilitar entrega al salir de la zona de reciclaje
+        justDelivered = false;
+      }
+    }
+
+    // =========================================================================
+    // 🎨 RENDERIZADO DEL MAPA Y JUGADOR (DRAW LOOP)
+    // =========================================================================
+    function draw() {
+      // Limpiar lienzo
+      ctx.clearRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+
+      // 1. Dibujar calles (Piso base grisáceo)
+      ctx.fillStyle = "#334155"; // Gris asfalto
+      ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+
+      // Dibujar líneas divisorias discontinuas en las calles
+      ctx.strokeStyle = "rgba(255,255,255,0.06)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([10, 15]);
+      
+      // Líneas horizontales de calles
+      for (let r = 0; r <= blocksRows; r++) {
+        const cy = marginY - 22 + r * (blockHeight + streetWidth);
+        ctx.beginPath();
+        ctx.moveTo(0, cy);
+        ctx.lineTo(LOGICAL_WIDTH, cy);
+        ctx.stroke();
+      }
+      
+      // Líneas verticales de calles
+      for (let c = 0; c <= blocksCols; c++) {
+        const cx = marginX - 22 + c * (blockWidth + streetWidth);
+        ctx.beginPath();
+        ctx.moveTo(cx, 0);
+        ctx.lineTo(cx, LOGICAL_HEIGHT);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]); // Reset de trazos discontinuos
+
+      // 2. Dibujar manzanas (Manzanas verdes y especiales)
+      blocks.forEach(block => {
+        ctx.save();
+        
+        // Estilos para manzanas regulares, plaza central o centro de reciclaje
+        if (block.isRecycling) {
+          // Centro de reciclaje - Azul tecnológico
+          ctx.fillStyle = "#1e3a8a";
+          ctx.strokeStyle = "#3b82f6";
+          ctx.lineWidth = 4;
+        } else if (block.isPlaza) {
+          // Plaza central - Verde Parque vibrante
+          ctx.fillStyle = "#166534";
+          ctx.strokeStyle = "#22c55e";
+          ctx.lineWidth = 3;
+        } else {
+          // Manzanas comunes - Verde bosque profundo
+          ctx.fillStyle = "#14532d";
+          ctx.strokeStyle = "#15803d";
+          ctx.lineWidth = 2;
+        }
+
+        // Rectángulos redondeados elegantes para manzanas
+        drawRoundedRect(ctx, block.x, block.y, block.w, block.h, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        // Detalles decorativos internos de las manzanas
+        if (block.isPlaza) {
+          // Dibujar flores, bancos o una fuente en la plaza central
+          ctx.fillStyle = "rgba(255,255,255,0.1)";
+          ctx.beginPath();
+          ctx.arc(block.x + block.w/2, block.y + block.h/2, 25, 0, Math.PI*2);
+          ctx.fill();
+          
+          // Emojis decorativos sobre el lienzo de la plaza central
+          ctx.font = "20px Outfit";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("⛲", block.x + block.w/2, block.y + block.h/2);
+          ctx.fillText("🌳", block.x + 25, block.y + 25);
+          ctx.fillText("🌳", block.x + block.w - 25, block.y + 25);
+          ctx.fillText("🌳", block.x + 25, block.y + block.h - 25);
+          ctx.fillText("🌳", block.x + block.w - 25, block.y + block.h - 25);
+        } else if (block.isRecycling) {
+          // Cartel e íconos del centro de reciclaje
+          ctx.font = "bold 20px Outfit";
+          ctx.fillStyle = "#60a5fa";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("♻️", block.x + block.w/2, block.y + block.h/2 - 10);
+          
+          ctx.font = "bold 10px Outfit";
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText("CENTRO DE", block.x + block.w/2, block.y + block.h/2 + 15);
+          ctx.fillText("RECICLADO", block.x + block.w/2, block.y + block.h/2 + 28);
+        } else {
+          // Casas o árboles minimalistas dentro de manzanas convencionales
+          ctx.font = "14px Outfit";
+          ctx.fillText("🏡", block.x + 22, block.y + 30);
+          ctx.fillText("🌳", block.x + 78, block.y + 30);
+          ctx.fillText("🏡", block.x + 78, block.y + 70);
+          ctx.fillText("🌳", block.x + 22, block.y + 70);
+        }
+
+        ctx.restore();
+      });
+
+      // 3. Dibujar Zona de descarga del Centro de Reciclado (Calles aledañas iluminadas de azul)
+      ctx.save();
+      ctx.strokeStyle = "rgba(59, 130, 246, 0.4)";
+      ctx.lineWidth = 4;
+      ctx.setLineDash([6, 8]);
+      ctx.beginPath();
+      // Dibujar área demarcatoria para estacionamiento de descarga en la calle
+      ctx.rect(990, 575, 200, 215);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
+      ctx.fillRect(990, 575, 200, 215);
+      
+      // Letrero luminoso en la calle
+      ctx.font = "bold 11px Outfit";
+      ctx.fillStyle = "#60a5fa";
+      ctx.textAlign = "left";
+      ctx.fillText("🔋 ZONA DE DESCARGA Y REFILL", 1000, 605);
+      ctx.restore();
+
+      // 4. Dibujar Obstáculos (Cajas de madera con cintas de advertencia)
+      obstacles.forEach(obs => {
+        ctx.save();
+        ctx.fillStyle = "#78350f"; // Color Madera Oscuro
+        ctx.strokeStyle = "#ea580c"; // Advertencia Naranja
+        ctx.lineWidth = 3;
+        
+        // Rectángulo del obstáculo
+        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        
+        // Dibujar cruz diagonal simulando barrera de madera
+        ctx.strokeStyle = "rgba(234, 88, 12, 0.5)";
+        ctx.beginPath();
+        ctx.moveTo(obs.x, obs.y);
+        ctx.lineTo(obs.x + obs.w, obs.y + obs.h);
+        ctx.moveTo(obs.x + obs.w, obs.y);
+        ctx.lineTo(obs.x, obs.y + obs.h);
+        ctx.stroke();
+
+        // Señal de peligro vial
+        ctx.font = "14px Outfit";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🚧", obs.x + obs.w/2, obs.y + obs.h/2);
+
+        ctx.restore();
+      });
+
+      // 5. Dibujar Residuos / Basura
+      garbage.forEach(item => {
+        if (!item.collected) {
+          ctx.save();
+          // Círculo de fondo con el color del residuo
+          ctx.fillStyle = item.color;
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(item.x + item.w/2, item.y + item.h/2, 14, 0, Math.PI*2);
+          ctx.fill();
+          ctx.stroke();
+
+          // Sombra luminosa
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = item.color;
+
+          // Dibujar el emoji del residuo encima
+          ctx.font = "14px Outfit";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          
+          // Efecto de deshabilitado para tipos no activos (opacidad media y sin emojis vibrantes)
+          if (item.type !== activeTypeIndex) {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+            ctx.beginPath();
+            ctx.arc(item.x + item.w/2, item.y + item.h/2, 14, 0, Math.PI*2);
+            ctx.fill();
+          } else {
+            ctx.fillText(item.emoji, item.x + item.w/2, item.y + item.h/2);
+          }
+          ctx.restore();
+        }
+      });
+
+      // 6. Dibujar Jugador (Camión Recolector Pixel-Art)
+      ctx.save();
+      ctx.translate(player.x + player.w/2, player.y + player.h/2);
+      ctx.rotate(player.angle);
+
+      // Dibujar cono de luz de los faros delanteros si está en movimiento
+      if (player.moving) {
+        const gradient = ctx.createLinearGradient(15, 0, 60, 0);
+        gradient.addColorStop(0, "rgba(253, 224, 71, 0.4)");
+        gradient.addColorStop(1, "rgba(253, 224, 71, 0)");
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(15, -4);
+        ctx.lineTo(60, -25);
+        ctx.lineTo(60, 25);
+        ctx.lineTo(15, 4);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Ruedas del camión (4 círculos negros)
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(-12, -15, 8, 4); // Rueda superior izq
+      ctx.fillRect(4, -15, 8, 4);  // Rueda superior der
+      ctx.fillRect(-12, 11, 8, 4);  // Rueda inferior izq
+      ctx.fillRect(4, 11, 8, 4);   // Rueda inferior der
+
+      // Chasis del camión (Naranja)
+      ctx.fillStyle = "#f97316";
+      drawRoundedRect(ctx, -14, -12, 28, 24, 5);
+      ctx.fill();
+      ctx.strokeStyle = "#ea580c";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Cabina blanca del piloto (al frente / derecha del eje de rotación)
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillRect(3, -9, 9, 18);
+      ctx.fillStyle = "#0284c7"; // Vidrio parabrisas celeste
+      ctx.fillRect(7, -7, 3, 14);
+
+      // Caja de reciclaje trasera (Carga) con el emoji activo sobre la bodega
+      ctx.fillStyle = "#16a34a"; // Caja verde
+      ctx.fillRect(-12, -9, 13, 18);
+      
+      // Detalle ♻️ en la parte trasera del chasis
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 9px Outfit";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("♻️", -5, 0);
+
+      ctx.restore();
+    }
+
+    // Auxiliar para dibujar rectángulos redondeados suaves
+    function drawRoundedRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    // =========================================================================
+    // ⚙️ GESTIÓN DE FINAL DE JUEGO (GAMEOVER & VICTORIA)
+    // =========================================================================
+    function triggerGameOver(reason) {
+      gameState = 'gameover';
+      playSound('crash');
+      
+      // Mostrar overlay
+      document.getElementById('screen-gameover').classList.remove('hidden');
+      document.getElementById('gameover-reason').innerText = reason;
+      document.getElementById('gameover-score').innerText = `Puntaje Final: ${score}`;
+      
+      // Enfocar caja de nombre
+      document.getElementById('player-name').value = localStorage.getItem('last_player_name') || "";
+      
+      // Mostrar advertencia si no está enlazado JSONBin
+      if (!isBinConfigured()) {
+        document.getElementById('local-warning-msg').classList.remove('hidden');
+      } else {
+        document.getElementById('local-warning-msg').classList.add('hidden');
+      }
+    }
+
+    function triggerVictory() {
+      gameState = 'victory';
+      playSound('victory');
+      
+      document.getElementById('screen-victory').classList.remove('hidden');
+      document.getElementById('victory-score').innerText = `Puntaje de Héroe: ${score}`;
+      document.getElementById('victory-player-name').value = localStorage.getItem('last_player_name') || "";
+    }
+
+    async function showLeaderboardScreen() {
+      gameState = 'leaderboard';
+      hideAllOverlays();
+      document.getElementById('screen-leaderboard').classList.remove('hidden');
+      
+      // Completar spinner de carga
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Cargando tabla de líderes...</td></tr>`;
+      
+      const scores = await getLeaderboard();
+      tbody.innerHTML = "";
+      
+      if (scores.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Sin puntajes aún. ¡Sé el primero!</td></tr>`;
+        return;
+      }
+      
+      scores.forEach((entry, index) => {
+        const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}°`;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td style="font-weight: 800;">${medal}</td>
+          <td>${escapeHtml(entry.nombre)}</td>
+          <td style="color: var(--primary-light); font-weight: 900;">${entry.puntaje} pts</td>
+          <td style="color:#94a3b8; font-size:0.8rem;">${entry.fecha || ""}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Auxiliar para evitar inyecciones XSS en la tabla de clasificación
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function hideAllOverlays() {
+      document.getElementById('screen-welcome').classList.add('hidden');
+      document.getElementById('screen-gameover').classList.add('hidden');
+      document.getElementById('screen-leaderboard').classList.add('hidden');
+      document.getElementById('screen-victory').classList.add('hidden');
+    }
+
+    // =========================================================================
+    // 🖱️ BINDING DE COMPONENTES INTERACTIVOS EN LA UI
+    // =========================================================================
+    
+    // Iniciar Juego (Click en Pantalla de Bienvenida)
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+      initAudio();
+      startNewGame();
+    });
+
+    // Guardar puntaje en Game Over
+    document.getElementById('btn-save-score').addEventListener('click', async () => {
+      const nameField = document.getElementById('player-name');
+      const name = nameField.value.trim() || "Anónimo";
+      
+      // Guardar el último nombre para evitar tener que reescribirlo
+      localStorage.setItem('last_player_name', name);
+      
+      const btn = document.getElementById('btn-save-score');
+      btn.disabled = true;
+      btn.innerText = "Guardando...";
+      
+      await saveScore(name, score);
+      
+      btn.disabled = false;
+      btn.innerText = "Guardar Puntaje";
+      
+      showLeaderboardScreen();
+    });
+
+    // Saltear guardado en Game Over
+    document.getElementById('btn-skip-save').addEventListener('click', () => {
+      showLeaderboardScreen();
+    });
+
+    // Guardar puntaje en Victoria
+    document.getElementById('btn-victory-save').addEventListener('click', async () => {
+      const nameField = document.getElementById('victory-player-name');
+      const name = nameField.value.trim() || "Anónimo";
+      localStorage.setItem('last_player_name', name);
+      
+      const btn = document.getElementById('btn-victory-save');
+      btn.disabled = true;
+      btn.innerText = "Registrando...";
+      
+      await saveScore(name, score);
+      
+      btn.disabled = false;
+      btn.innerText = "Guardar y Registrar Hazaña";
+      
+      showLeaderboardScreen();
+    });
+
+    // Saltear guardado en Victoria
+    document.getElementById('btn-victory-skip').addEventListener('click', () => {
+      showLeaderboardScreen();
+    });
+
+    // Volver a jugar (Reiniciar)
+    document.getElementById('btn-restart').addEventListener('click', () => {
+      startNewGame();
+    });
+
+    // =========================================================================
+    // 🌀 BUCLE PRINCIPAL DE ANIMACIÓN (GAME LOOP)
+    // =========================================================================
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // Iniciar Loop
+    gameLoop();
+  </script>
+</body>
+</html>
