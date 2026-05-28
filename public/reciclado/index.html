@@ -1,1076 +1,1328 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-AR">
 
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18175127365"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>RECICLADO URRA — Rauch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-      gtag('config', 'AW-18175127365');
-    </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El cuidado de la Casa Común y la separación de residuos</title>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0a0f1a;
+      font-family: 'Nunito', sans-serif;
+    }
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    #game-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    #overlay-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
 
-    <style>
-        :root {
-            --primary: #4CAF50;
-            /* Verde Vivo */
-            --primary-dark: #388E3C;
-            /* Verde Vivo Oscuro */
-            --secondary: #FFC107;
-            /* Amarillo / Alerta */
-            --bg-color: #f5f7f9;
-            /* Fondo suave */
-            --bg-panel: #ffffff;
-            /* Blanco */
-            --text-color: #333333;
-            /* Texto principal */
-            --border-color: #e0e0e0;
-            /* Gris Claro Bordes */
-            --border-radius: 8px;
-            /* Rectos pero suaves */
-        }
+    #overlay-container.active {
+      pointer-events: all;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', sans-serif;
-        }
+    .overlay-panel {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(8, 14, 28, 0.97);
+      border-radius: 24px;
+      padding: 28px;
+      color: #fff;
+      text-align: center;
+      border: 3px solid #4ecdc4;
+      box-shadow: 0 0 70px rgba(78, 205, 196, 0.45);
+      max-width: 460px;
+      width: 92%;
+    }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
+    .overlay-panel.visible {
+      display: block;
+    }
 
-        /* HEADER */
-        header {
-            background-color: var(--primary);
-            color: white;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
+    .overlay-panel h2 {
+      font-size: 27px;
+      margin-bottom: 10px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
 
-        .header-title {
-            display: flex;
-            flex-direction: column;
-        }
+    .overlay-panel p {
+      font-size: 17px;
+      margin: 8px 0;
+      color: #b0b8cc;
+    }
 
-        .header-title h1 {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: white;
-            margin-bottom: 2px;
-        }
+    .overlay-panel input[type="text"] {
+      width: 85%;
+      padding: 11px 16px;
+      font-size: 17px;
+      border-radius: 12px;
+      border: 2px solid #4ecdc4;
+      background: #141c30;
+      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      outline: none;
+      margin: 12px 0;
+      text-align: center;
+    }
 
-        .header-title span {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
-        }
+    .overlay-panel input[type="text"]::placeholder {
+      color: #445566;
+    }
 
-        .header-buttons {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
+    .overlay-panel button {
+      padding: 11px 22px;
+      font-size: 16px;
+      font-weight: 800;
+      border: none;
+      border-radius: 13px;
+      cursor: pointer;
+      margin: 5px;
+      font-family: 'Nunito', sans-serif;
+      transition: transform .15s, box-shadow .15s;
+    }
 
-        button {
-            background-color: white;
-            color: var(--primary-dark);
-            border: none;
-            padding: 10px 16px;
-            border-radius: var(--border-radius);
-            font-weight: 800;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: transform 0.1s, box-shadow 0.1s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+    .overlay-panel button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
+    .btn-save {
+      background: linear-gradient(135deg, #4ecdc4, #3ba69c);
+      color: #fff;
+    }
 
-        button.primary-btn {
-            background-color: var(--primary);
-            color: white;
-            border: 2px solid white;
-        }
+    .btn-play {
+      background: linear-gradient(135deg, #ff6b6b, #e63946);
+      color: #fff;
+    }
 
-        button.primary-btn:hover {
-            background-color: var(--primary-dark);
-        }
+    .btn-play2 {
+      background: linear-gradient(135deg, #6c5ce7, #8e2de2);
+      color: #fff;
+    }
 
-        /* BANNERS */
-        #firebase-banner,
-        .instruction-banner {
-            text-align: center;
-            padding: 12px;
-            font-size: 0.95rem;
-            font-weight: 800;
-            z-index: 999;
-        }
+    #leaderboard-table,
+    #vic-lb-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
 
-        #firebase-banner {
-            background-color: var(--secondary);
-            color: #856404;
-            display: none;
-        }
+    #leaderboard-table th,
+    #vic-lb-table th {
+      background: #4ecdc4;
+      color: #080e1c;
+      padding: 7px;
+      font-weight: 800;
+    }
 
-        .instruction-banner {
-            background-color: #2196F3;
-            color: white;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
+    #leaderboard-table td,
+    #vic-lb-table td {
+      padding: 5px 4px;
+      border-bottom: 1px solid #1e2a40;
+    }
 
-        /* MAP */
-        #map {
-            flex: 1;
-            width: 100%;
-            z-index: 1;
-        }
-
-        /* TOAST NOTIFICATION */
-        #toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background-color: var(--primary-dark);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-weight: 800;
-            font-size: 1rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 2000;
-        }
-
-        #toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* MODALS */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 3000;
-            backdrop-filter: blur(3px);
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background-color: var(--bg-panel);
-            padding: 32px;
-            border-radius: var(--border-radius);
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-            position: relative;
-        }
-
-        .modal-content.large {
-            max-width: 1000px;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: none;
-            border: none;
-            font-size: 1.8rem;
-            cursor: pointer;
-            color: #888;
-            padding: 4px;
-            line-height: 1;
-            box-shadow: none;
-        }
-
-        .modal-close:hover {
-            color: var(--text-color);
-            transform: none;
-            box-shadow: none;
-        }
-
-        .modal-title {
-            font-size: 1.6rem;
-            font-weight: 800;
-            margin-bottom: 24px;
-            color: var(--primary-dark);
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 12px;
-        }
-
-        /* FORMS */
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            font-size: 0.95rem;
-            margin-bottom: 6px;
-            color: var(--text-color);
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 10px 12px;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius);
-            font-size: 0.95rem;
-            background-color: #f9f9f9;
-            color: var(--text-color);
-            transition: border-color 0.2s, background-color 0.2s;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary);
-            background-color: white;
-        }
-
-        .form-control[readonly] {
-            background-color: #e9ecef;
-            color: #666;
-            cursor: not-allowed;
-            border-color: #ddd;
-        }
-
-        .checkbox-group,
-        .radio-group {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-            background: #f9f9f9;
-            padding: 16px;
-            border-radius: var(--border-radius);
-            border: 2px solid var(--border-color);
-        }
-
-        .check-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            margin-top: 32px;
-            border-top: 2px solid var(--border-color);
-            padding-top: 20px;
-        }
-
-        /* TOOLTIP LEAFLET */
-        .custom-tooltip {
-            background: var(--bg-panel);
-            border: 2px solid var(--primary);
-            border-radius: var(--border-radius);
-            padding: 12px;
-            font-family: 'Inter', sans-serif;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            color: var(--text-color);
-        }
-
-        .custom-tooltip h4 {
-            margin: 0 0 6px 0;
-            color: var(--primary-dark);
-            font-size: 1.1rem;
-            font-weight: 800;
-        }
-
-        .custom-tooltip p {
-            margin: 4px 0;
-            font-size: 0.9rem;
-            color: #555;
-            font-weight: 500;
-        }
-
-        /* STATS PANEL */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .stat-card {
-            background: #f0f7f1;
-            padding: 20px;
-            border-radius: var(--border-radius);
-            border: 2px solid var(--primary);
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .stat-card h3 {
-            font-size: 0.9rem;
-            color: #555;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 8px;
-            font-weight: 800;
-        }
-
-        .stat-card .value {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: var(--primary-dark);
-        }
-
-        .charts-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-
-        @media (max-width: 768px) {
-            .charts-container {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .table-container {
-            width: 100%;
-            overflow-x: auto;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.95rem;
-        }
-
-        th,
-        td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        th {
-            background-color: var(--primary);
-            color: white;
-            font-weight: 600;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover {
-            background-color: #f5f5f5;
-        }
-
-        /* PRINT STYLES */
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-
-            #map,
-            #map * {
-                visibility: visible;
-            }
-
-            #map {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100vw;
-                height: 100vh;
-            }
-
-            .leaflet-control-container {
-                display: none;
-            }
-
-            body::before {
-                content: "Mapa de Relevamiento de Residuos - Rauch | Colegio Inmaculada Concepción";
-                visibility: visible;
-                position: absolute;
-                top: 20px;
-                left: 50px;
-                font-size: 20px;
-                font-weight: bold;
-                z-index: 9999;
-                background: white;
-                padding: 10px 15px;
-                border: 2px solid black;
-            }
-        }
-    </style>
+    #leaderboard-table tr:nth-child(even),
+    #vic-lb-table tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.03);
+    }
+  </style>
 </head>
 
 <body>
-
-    <!-- Header -->
-    <header>
-        <div class="header-title">
-            <h1>“Un Rauch más lindo”</h1>
-            <span>Colegio Inmaculada Concepción — Proyecto de Reciclado Sustentable</span>
-        </div>
-        <div class="header-buttons">
-            <span id="connection-status" title="Conexión a base de datos">🔴</span>
-            <button onclick="window.open('reciclaje-rauch.html', '_blank')" class="primary-btn">🎮 Jugar Reciclaje Rauch</button>
-            <button onclick="openStatsModal()">📊 Estadísticas</button>
-            <button onclick="openTeacherModal()">🖨️ Panel Maestra</button>
-        </div>
-    </header>
-
-    <!-- Warnings & Instructions -->
-    <div id="firebase-banner">⚠️ Configurá Firebase en el código para guardar datos en la nube. Actualmente funcionando
-        en modo local (sin guardar).</div>
-    <div class="instruction-banner">👇 Hacé clic en tu barrio para registrar lo que observaste</div>
-
-    <!-- Map Container -->
-    <div id="map"></div>
-
-    <!-- Toast Notification -->
-    <div id="toast">✅ Relevamiento guardado con éxito.</div>
-
-    <!-- Form Modal -->
-    <div class="modal-overlay" id="form-modal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeModal('form-modal')">&times;</button>
-            <h2 class="modal-title">📋 Nuevo Relevamiento</h2>
-            <form id="relevamiento-form" onsubmit="handleFormSubmit(event)">
-                <input type="hidden" id="sector-id">
-
-                <div class="form-group">
-                    <label>Barrio / Sector</label>
-                    <input type="text" id="sector-nombre" class="form-control" readonly>
-                </div>
-
-                <div style="display: flex; gap: 16px;">
-                    <div class="form-group" style="flex: 1;">
-                        <label>Docente a cargo</label>
-                        <input type="text" class="form-control" value="Luz FACCIO" readonly>
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label>Fecha y Hora</label>
-                        <input type="datetime-local" id="fecha-hora" class="form-control" required>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 16px;">
-                    <div class="form-group" style="flex: 2;">
-                        <label>Tu Nombre y Apellido</label>
-                        <input type="text" id="alumno-nombre" class="form-control" placeholder="Ej: Juan Pérez"
-                            required>
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label>Grado Escolar</label>
-                        <select id="alumno-grado" class="form-control" required>
-                            <option value="">Elegir...</option>
-                            <option value="1°">1° grado</option>
-                            <option value="2°">2° grado</option>
-                            <option value="3°">3° grado</option>
-                            <option value="4°">4° grado</option>
-                            <option value="5°">5° grado</option>
-                            <option value="6°">6° grado</option>
-                            <option value="7°">7° grado</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>¿Qué tipo de basura viste más? (Podés marcar varias):</label>
-                    <div class="checkbox-group">
-                        <label class="check-item"><input type="checkbox" name="residuo" value="Plástico"> ♻️
-                            Plástico</label>
-                        <label class="check-item"><input type="checkbox" name="residuo" value="Vidrio"> 🍶
-                            Vidrio</label>
-                        <label class="check-item"><input type="checkbox" name="residuo" value="Papel/Cartón"> 📦
-                            Papel/Cartón</label>
-                        <label class="check-item"><input type="checkbox" name="residuo" value="Orgánico"> 🍃
-                            Orgánico</label>
-                        <label class="check-item"><input type="checkbox" name="residuo" value="Electrónicos"> 💡
-                            Electrónicos</label>
-                        <label class="check-item"><input type="checkbox" name="residuo" value="Metales"> 🔩
-                            Metales</label>
-                        <label class="check-item"><input type="checkbox" name="residuo" value="Mixto"> 🗑️ Mixto</label>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Cantidad estimada de basura visible</label>
-                    <select id="cantidad-basura" class="form-control" required>
-                        <option value="">Elegir...</option>
-                        <option value="Muy poca">Muy poca 😊</option>
-                        <option value="Poca">Poca 🙂</option>
-                        <option value="Moderada">Moderada 😐</option>
-                        <option value="Mucha">Mucha 😟</option>
-                        <option value="Excesiva">Excesiva 😱</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>¿Cada cuánto pasa el camión recolector? (Si sabés)</label>
-                    <select id="frecuencia" class="form-control" required>
-                        <option value="">Elegir...</option>
-                        <option value="Diaria">Todos los días</option>
-                        <option value="Cada 2-3 días">Cada 2-3 días</option>
-                        <option value="Semanal">Una vez por semana</option>
-                        <option value="Irregular">A veces pasa, a veces no</option>
-                        <option value="No observada">No sé / No presté atención</option>
-                    </select>
-                </div>
-
-                <div style="display: flex; gap: 16px;">
-                    <div class="form-group" style="flex: 1;">
-                        <label>¿Hay contenedores acá?</label>
-                        <div class="radio-group">
-                            <label class="check-item"><input type="radio" name="contenedores" value="Sí" required>
-                                Sí</label>
-                            <label class="check-item"><input type="radio" name="contenedores" value="No"> No</label>
-                            <label class="check-item"><input type="radio" name="contenedores" value="Parcialmente">
-                                Parcial</label>
-                        </div>
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label>¿Basura fuera del tacho?</label>
-                        <div class="radio-group">
-                            <label class="check-item"><input type="radio" name="basura-fuera" value="Sí" required>
-                                Sí</label>
-                            <label class="check-item"><input type="radio" name="basura-fuera" value="No"> No</label>
-                            <label class="check-item"><input type="radio" name="basura-fuera" value="A veces"> A
-                                veces</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Observaciones adicionales</label>
-                    <textarea id="observaciones" class="form-control" rows="3" maxlength="300"
-                        placeholder="Ej: Hay botellas tiradas en la zanja..."></textarea>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" onclick="closeModal('form-modal')">Cancelar</button>
-                    <button type="submit" class="primary-btn">💾 Guardar Relevamiento</button>
-                </div>
-            </form>
-        </div>
+  <div id="game-container"></div>
+  <div id="overlay-container">
+    <div id="gameover-panel" class="overlay-panel">
+      <h2 id="go-reason" style="color:#ff6b6b;">¡Fin del juego!</h2>
+      <p>Puntaje: <span id="go-score" style="color:#ffd700;font-weight:900;font-size:30px;">0</span></p>
+      <input type="text" id="go-name" placeholder="Escribí tu nombre" maxlength="15" />
+      <div><button class="btn-save" id="go-save">💾 Guardar y ver ranking</button></div>
+      <div id="go-leaderboard" style="display:none;margin-top:10px;max-height:170px;overflow-y:auto;">
+        <h3 style="color:#4ecdc4;font-size:14px;">🏆 TOP 10 RAUCH</h3>
+        <table id="leaderboard-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Pts</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;"><button class="btn-play" id="go-retry">🔄 Jugar de nuevo</button></div>
     </div>
-
-    <!-- Stats Modal -->
-    <div class="modal-overlay" id="stats-modal">
-        <div class="modal-content large">
-            <button class="modal-close" onclick="closeModal('stats-modal')">&times;</button>
-            <h2 class="modal-title">📊 Estadísticas del Proyecto</h2>
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>Total de Relevamientos</h3>
-                    <div class="value" id="stat-total">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Sector más activo</h3>
-                    <div class="value" id="stat-top-sector" style="font-size: 1.25rem; line-height: 2.5rem;">N/A</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Residuo Predominante</h3>
-                    <div class="value" id="stat-top-residuo" style="font-size: 1.25rem; line-height: 2.5rem;">N/A</div>
-                </div>
-            </div>
-
-            <div class="charts-container">
-                <div>
-                    <canvas id="barChart"></canvas>
-                </div>
-                <div>
-                    <canvas id="pieChart"></canvas>
-                </div>
-            </div>
-
-            <h3>Resumen por Sector</h3>
-            <div class="table-container">
-                <table id="stats-table">
-                    <thead>
-                        <tr>
-                            <th>Sector</th>
-                            <th>Relevamientos</th>
-                            <th>Alertas de Basura</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Llenado dinámico -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <div id="victory-panel" class="overlay-panel">
+      <h2 style="color:#ffd700;">¡RAUCH ESTÁ LIMPIA! 🎉</h2>
+      <p style="font-size:15px;color:#aaffaa;font-weight:bold;">¡Reciclaste toda la basura de la ciudad!</p>
+      <p>Puntaje: <span id="vic-score" style="color:#ffd700;font-weight:900;font-size:30px;">0</span></p>
+      <input type="text" id="vic-name" placeholder="Escribí tu nombre" maxlength="15" />
+      <div><button class="btn-save" id="vic-save">💾 Guardar y ver ranking</button></div>
+      <div id="vic-leaderboard" style="display:none;margin-top:10px;max-height:170px;overflow-y:auto;">
+        <h3 style="color:#4ecdc4;font-size:14px;">🏆 TOP 10 RAUCH</h3>
+        <table id="vic-lb-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Pts</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;"><button class="btn-play2" id="vic-retry">🔄 Jugar de nuevo</button></div>
     </div>
+  </div>
 
-    <!-- Teacher Modal -->
-    <div class="modal-overlay" id="teacher-modal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeModal('teacher-modal')">&times;</button>
-            <h2 class="modal-title">🖨️ Panel Maestra (Reportes)</h2>
-            <p style="margin-bottom: 24px; color: #555; font-size: 1rem;">Seleccione el reporte que desea generar e
-                imprimir para la clase.</p>
+  <script>
+    // ═══════════════════════════════════════════════════════════
+    // CONFIGURACIÓN
+    // ═══════════════════════════════════════════════════════════
+    const CONFIG = {
+      jsonbinBinId: 'TU_BIN_ID_AQUI',
+      jsonbinApiKey: 'TU_API_KEY_AQUI',
+      jsonbinUrl: function () { return 'https://api.jsonbin.io/v3/b/' + this.jsonbinBinId; },
+      TILE: 64,
+      MAP_COLS: 20,
+      MAP_ROWS: 20,
+      MOVE_SPEED: 5.0,
+      FUEL_FULL: 100,
+      FUEL_RATE: 4.5,
+      FUEL_WARN: 25,
+      BAG_CAP: 5,
+      BAGS_L1: 6,
+      BAGS_L2: 8,
+      OBS_MIN_L1: 7, OBS_MAX_L1: 11,
+      OBS_MIN_L2: 13, OBS_MAX_L2: 17
+    };
 
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                <button class="primary-btn" onclick="printMap()"
-                    style="justify-content: center; padding: 16px; font-size: 1.1rem;">
-                    🗺️ Imprimir Mapa Actual con Sectores (A4)
-                </button>
-                <button onclick="printData()"
-                    style="justify-content: center; padding: 16px; font-size: 1.1rem; border: 2px solid #2196F3; color: #2196F3;">
-                    📋 Imprimir Tabla de Relevamientos
-                </button>
-            </div>
-        </div>
-    </div>
+    // ═══════════════════════════════════════════════════════════
+    // MAPA 20×20 damero de Rauch
+    // ═══════════════════════════════════════════════════════════
+    function buildMapData() {
+      const C = CONFIG.MAP_COLS, R = CONFIG.MAP_ROWS;
+      const map = [];
+      for (let r = 0; r < R; r++) {
+        const row = [];
+        for (let c = 0; c < C; c++) {
+          if (r === 0 || r === R - 1 || c === 0 || c === C - 1) { row.push(1); continue; }
+          if (r % 3 === 0 || c % 3 === 0) { row.push(1); continue; }
+          if (c >= 9 && c <= 11 && r >= 9 && r <= 11) { row.push(2); continue; } // plaza
+          if (c >= 17 && c <= 19 && r >= 17 && r <= 19) { row.push(3); continue; } // URRA
+          row.push(0); // manzana
+        }
+        map.push(row);
+      }
+      return map;
+    }
+    const MAP_DATA = buildMapData();
 
-    <!-- SCRIPTS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    // Fallbacks procedurales para si falla la carga de un asset
+    function makeFallback(scene, key, w, h, color) {
+      const g = scene.make.graphics({ add: false });
+      g.fillStyle(color, 1);
+      g.fillRoundedRect(2, 2, w - 4, h - 4, 6);
+      g.lineStyle(2, 0x000000, 0.5);
+      g.strokeRoundedRect(2, 2, w - 4, h - 4, 6);
+      g.generateTexture(key, w, h);
+      g.destroy();
+    }
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    // Textura de calle procedural mejorada (fallback si calle.png falla)
+    function makeStreetTexture(scene) {
+      const T = CONFIG.TILE;
+      const g = scene.make.graphics({ add: false });
+      // Asfalto oscuro
+      g.fillStyle(0x3d4450, 1); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x444d5a, 1); g.fillRect(1, 1, T - 2, T - 2);
+      // Líneas viales amarillas discontinuas
+      g.fillStyle(0xddbb22, 0.5);
+      g.fillRect(T / 2 - 2, 2, 4, T * 0.3);
+      g.fillRect(T / 2 - 2, T * 0.55, 4, T * 0.3);
+      g.fillRect(2, T / 2 - 2, T * 0.3, 4);
+      g.fillRect(T * 0.55, T / 2 - 2, T * 0.3, 4);
+      // Bordes de acera sutiles
+      g.lineStyle(1, 0x555e6a, 0.6);
+      g.strokeRect(0, 0, T, T);
+      g.generateTexture('calle_fb', T, T);
+      g.destroy();
+    }
 
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+    // Textura de manzana / césped
+    function makeGrassTexture(scene) {
+      const T = CONFIG.TILE;
+      const g = scene.make.graphics({ add: false });
+      g.fillStyle(0x236b36, 1); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x1e5e2e, 1); g.fillRect(1, 1, T - 2, T - 2);
+      // Textura de hierba sutil
+      g.fillStyle(0x2a7a3e, 0.35);
+      for (let i = 0; i < 8; i++) {
+        const rx = (i * 17) % (T - 4) + 2;
+        const ry = (i * 23) % (T - 4) + 2;
+        g.fillCircle(rx, ry, 4);
+      }
+      g.generateTexture('tile_manzana', T, T);
+      g.destroy();
+    }
 
-        let db = null;
-        let isFirebaseConfigured = false;
-        let todosLosRelevamientos = [];
+    // Textura plaza
+    function makePlazaTexture(scene) {
+      const T = CONFIG.TILE;
+      const g = scene.make.graphics({ add: false });
+      g.fillStyle(0x2e8c4e, 1); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x27a348, 1); g.fillRect(2, 2, T - 4, T - 4);
+      g.fillStyle(0x6fd88c, 0.3); g.fillCircle(T / 2, T / 2, 26);
+      g.fillStyle(0x3498db, 1); g.fillCircle(T / 2, T / 2, 6);
+      g.lineStyle(2, 0x196b32, 1); g.strokeCircle(T / 2, T / 2, 22);
+      g.generateTexture('tile_plaza', T, T);
+      g.destroy();
+    }
 
-        if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                isFirebaseConfigured = true;
-                document.getElementById('connection-status').innerText = '🟢';
-                document.getElementById('connection-status').title = 'Conectado a Firebase';
-            } catch (e) {
-                console.error("Error inicializando Firebase:", e);
-            }
+    // Textura tile centro URRA
+    function makeCentroTile(scene) {
+      const T = CONFIG.TILE;
+      const g = scene.make.graphics({ add: false });
+      g.fillStyle(0x0f1e2e, 1); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x142536, 1); g.fillRect(2, 2, T - 4, T - 4);
+      g.generateTexture('tile_centro', T, T);
+      g.destroy();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ESCENA 1: BootScene — intro animada
+    // ═══════════════════════════════════════════════════════════
+    class BootScene extends Phaser.Scene {
+      constructor() { super({ key: 'BootScene' }); }
+      create() {
+        const cx = this.cameras.main.centerX;
+        const cy = this.cameras.main.centerY;
+        this.cameras.main.setBackgroundColor('#0a0f1a');
+
+        const letters = 'RECICLADO URRA'.split('');
+        const totalW = letters.length * 22;
+        letters.forEach((ch, i) => {
+          const col = i < 9 ? '#4ecdc4' : '#ffd700';
+          const txt = this.add.text(cx - totalW / 2 + i * 22 + 11, cy - 200, ch, {
+            fontFamily: 'Nunito', fontSize: '44px', fontStyle: 'bold',
+            color: col, stroke: '#0a0f1a', strokeThickness: 4
+          }).setOrigin(0.5).setAlpha(0);
+          this.tweens.add({ targets: txt, y: cy - 50, alpha: 1, duration: 430, delay: i * 65, ease: 'Bounce.easeOut' });
+        });
+
+        const sub = this.add.text(cx, cy + 22, '♻️  Rauch, Buenos Aires', {
+          fontFamily: 'Nunito', fontSize: '21px', color: '#6a90aa'
+        }).setOrigin(0.5).setAlpha(0);
+        this.tweens.add({ targets: sub, alpha: 1, duration: 600, delay: 1100 });
+
+        const dot = this.add.text(cx, cy + 62, '●', {
+          fontFamily: 'Nunito', fontSize: '18px', color: '#4ecdc4'
+        }).setOrigin(0.5).setAlpha(0);
+        this.tweens.add({
+          targets: dot, alpha: 1, duration: 350, delay: 1700, onComplete: () => {
+            this.tweens.add({ targets: dot, alpha: 0.15, duration: 380, yoyo: true, repeat: -1 });
+          }
+        });
+
+        this.time.delayedCall(2700, () => {
+          this.cameras.main.fadeOut(350);
+          this.time.delayedCall(350, () => this.scene.start('PreloadScene'));
+        });
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ESCENA 2: PreloadScene — carga assets reales + fallbacks
+    // ═══════════════════════════════════════════════════════════
+    class PreloadScene extends Phaser.Scene {
+      constructor() { super({ key: 'PreloadScene' }); }
+
+      preload() {
+        const cx = this.cameras.main.centerX;
+        const cy = this.cameras.main.centerY;
+        this.cameras.main.setBackgroundColor('#0a0f1a');
+
+        // Barra de carga visual
+        const barW = 340, barH = 22;
+        const barBg = this.add.graphics();
+        barBg.fillStyle(0x1a2436, 1);
+        barBg.fillRoundedRect(cx - barW / 2, cy + 10, barW, barH, 8);
+        barBg.lineStyle(1.5, 0x4ecdc4, 0.4);
+        barBg.strokeRoundedRect(cx - barW / 2, cy + 10, barW, barH, 8);
+
+        const bar = this.add.graphics();
+        const label = this.add.text(cx, cy - 28, 'Cargando Rauch...', {
+          fontFamily: 'Nunito', fontSize: '19px', color: '#8ab0cc'
+        }).setOrigin(0.5);
+        const pct = this.add.text(cx, cy + 46, '0%', {
+          fontFamily: 'Nunito', fontSize: '15px', color: '#4ecdc4', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        this.load.on('progress', v => {
+          bar.clear();
+          bar.fillStyle(0x4ecdc4, 1);
+          bar.fillRoundedRect(cx - barW / 2 + 2, cy + 12, Math.max(0, barW * v - 4), barH - 4, 6);
+          // degradado
+          bar.fillStyle(0x2ecc71, 0.4);
+          bar.fillRoundedRect(cx - barW / 2 + 2, cy + 12, Math.max(0, barW * v - 4), (barH - 4) * 0.45, { tl: 6, tr: 6, bl: 0, br: 0 });
+          pct.setText(Math.round(v * 100) + '%');
+        });
+
+        this.load.on('loaderror', file => {
+          console.warn('⚠️ Asset no cargado (usará fallback):', file.key);
+          this._failed = this._failed || {};
+          this._failed[file.key] = true;
+        });
+
+        // Cargar directamente las imágenes transparentes y optimizadas
+        this.load.image('camion', 'assets/camion.png');
+        this.load.image('bolsa_verde', 'assets/bolsa_verde.png');
+        this.load.image('bolsa_negra', 'assets/bolsa_negra.png');
+        this.load.image('bolsa_roja', 'assets/bolsa_roja.png');
+        this.load.image('centro_reciclado', 'assets/centro_reciclado.png');
+        this.load.image('casa_azul', 'assets/casa_azul.png');
+        this.load.image('casa_roja', 'assets/casa_roja.png');
+        this.load.image('casa_amarilla', 'assets/casa_amarilla.png');
+        this.load.image('calle', 'assets/calle.png');
+        this.load.image('work', 'assets/work.png');
+
+        // Cargar spritesheet animado del obstáculo desde el GIF procesado
+        this.load.spritesheet('work_anim', 'assets/work_spritesheet.png', {
+          frameWidth: 64,
+          frameHeight: 64
+        });
+      }
+
+      create() {
+        this._failed = this._failed || {};
+        const T = CONFIG.TILE;
+
+        // ─ Generar texturas proceduales de tiles ─
+        makeGrassTexture(this);
+        makePlazaTexture(this);
+        makeCentroTile(this);
+
+        // ─ Partícula ─
+        const pg = this.make.graphics({ add: false });
+        pg.fillStyle(0xffffff, 1); pg.fillCircle(4, 4, 4);
+        pg.generateTexture('particle', 8, 8); pg.destroy();
+
+        // ─ Calle ─
+        if (!this._failed['calle']) {
+          try {
+            const src = this.textures.get('calle').getSourceImage();
+            const cv = document.createElement('canvas');
+            cv.width = T; cv.height = T;
+            cv.getContext('2d').drawImage(src, 0, 0, T, T);
+            this.textures.remove('calle');
+            this.textures.addCanvas('calle', cv);
+          } catch (e) {
+            console.error("Error resizing street tile:", e);
+            makeStreetTexture(this);
+            this.textures.rename('calle_fb', 'calle');
+          }
         } else {
-            document.getElementById('firebase-banner').style.display = 'block';
+          makeStreetTexture(this);
+          this.textures.rename('calle_fb', 'calle');
         }
 
-        /* 2. DATOS DE SECTORES (GRILLA 20 ZONAS) Y COLORES BASE */
-        const gridLng = -59.0985;
-        const gridLat = -36.7727;
-        const step = 0.008;
+        // ─ Camión (Fallback si falla) ─
+        if (this._failed['camion']) {
+          makeFallback(this, 'camion', T, T, 0xff6600);
+        }
 
-        // Paleta de colores vivos y variados para cada sector vacío
-        const baseColors = [
-            '#FF5722', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
-            '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50',
-            '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800',
-            '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5'
+        // ─ Bolsas (Fallbacks si fallan) ─
+        const bags = [
+          { key: 'bolsa_verde', fb: 0x27ae60 },
+          { key: 'bolsa_negra', fb: 0x2c3340 },
+          { key: 'bolsa_roja', fb: 0xc0392b }
         ];
+        bags.forEach(b => {
+          if (this._failed[b.key]) {
+            makeFallback(this, b.key, 44, 44, b.fb);
+          }
+        });
 
-        function makeRect(id, name, latOff, lngOff, index) {
-            const lat1 = gridLat + latOff * step;
-            const lat2 = gridLat + (latOff + 1) * step;
-            const lng1 = gridLng + lngOff * step;
-            const lng2 = gridLng + (lngOff + 1) * step;
-            return {
-                "type": "Feature",
-                "properties": { "id": id, "name": name, "count": 0, "lastData": null, "baseColor": baseColors[index] },
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [[[lng1, lat1], [lng2, lat1], [lng2, lat2], [lng1, lat2], [lng1, lat1]]]
-                }
-            };
+        // ─ Centro reciclado (Fallback si falla) ─
+        if (this._failed['centro_reciclado']) {
+          makeFallback(this, 'centro_reciclado', T * 3, T * 3, 0x2288cc);
         }
 
-        // 20 Zonas
-        const SECTORES_RAUCH = {
-            "type": "FeatureCollection",
-            "features": [
-                // Fila 1 (Norte)
-                makeRect("noroeste", "Barrio Noroeste", 1, -1, 0),
-                makeRect("norte", "Barrio Norte", 1, 0, 1),
-                makeRect("noreste-1", "Barrio Noreste", 1, 1, 2),
-                makeRect("noreste-2", "Noreste Periférico", 1, 2, 3),
-                makeRect("noreste-3", "Noreste Extremo", 1, 3, 4),
+        // ─ Casas (Fallbacks si fallan) ─
+        if (this._failed['casa_azul']) makeFallback(this, 'casa_azul', T * 2, T * 2, 0x2980b9);
+        if (this._failed['casa_roja']) makeFallback(this, 'casa_roja', T * 2, T * 2, 0xc0392b);
+        if (this._failed['casa_amarilla']) makeFallback(this, 'casa_amarilla', T * 2, T * 2, 0xf1c40f);
 
-                // Fila 2 (Centro)
-                makeRect("oeste", "Barrio Oeste", 0, -1, 5),
-                makeRect("centro", "Centro Histórico", 0, 0, 6),
-                makeRect("este-1", "Barrio Este", 0, 1, 7),
-                makeRect("este-2", "Extensión Este", 0, 2, 8),
-                makeRect("este-3", "Zona Rural Este", 0, 3, 9),
+        // ─ WORK / obstáculo (Fallback si falla) ─
+        if (this._failed['work']) {
+          makeFallback(this, 'work', T, T, 0xf39c12);
+        }
 
-                // Fila 3 (Sur)
-                makeRect("suroeste", "Barrio Suroeste", -1, -1, 10),
-                makeRect("sur", "Barrio Sur", -1, 0, 11),
-                makeRect("sureste-1", "Barrio Sureste", -1, 1, 12),
-                makeRect("sureste-2", "Sureste Periférico", -1, 2, 13),
-                makeRect("sureste-3", "Sureste Extremo", -1, 3, 14),
+        // ─ Registrar animación del obstáculo de obra WORK.gif ─
+        if (!this._failed['work_anim']) {
+          this.anims.create({
+            key: 'work_flash',
+            frames: this.anims.generateFrameNumbers('work_anim', { start: 0, end: 42 }),
+            frameRate: 20,
+            repeat: -1
+          });
+        }
 
-                // Fila 4 (Sur Extremo)
-                makeRect("suroeste-ext", "Suroeste Rural", -2, -1, 15),
-                makeRect("sur-ext", "Área Periurbana Sur", -2, 0, 16),
-                makeRect("sureste-ext-1", "Zona Industrial Sureste", -2, 1, 17),
-                makeRect("sureste-ext-2", "Acceso Sureste", -2, 2, 18),
-                makeRect("sureste-ext-3", "Camino Sureste", -2, 3, 19)
-            ]
+        // Transición a juego
+        this.time.delayedCall(200, () => {
+          this.cameras.main.fadeOut(300);
+          this.time.delayedCall(300, () => {
+            this.scene.start('GameScene', { level: 1, score: 0, fromMenu: true });
+          });
+        });
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ESCENA 3: GameScene — Jugabilidad completa
+    // ═══════════════════════════════════════════════════════════
+    class GameScene extends Phaser.Scene {
+      constructor() { super({ key: 'GameScene' }); }
+
+      init(data) {
+        this.level = data.level || 1;
+        this.score = data.score || 0;
+        this.fromMenu = data.fromMenu || false;
+        this.fuel = CONFIG.FUEL_FULL;
+        this.cargoType = null;
+        this.cargoCount = 0;
+        this.totalDelivered = { verde: 0, negra: 0, roja: 0 };
+        const n = this.level === 1 ? CONFIG.BAGS_L1 : CONFIG.BAGS_L2;
+        this.bagsPerType = n;
+        this.bagsRemaining = { verde: n, negra: n, roja: n };
+        this.isGameOver = false;
+        this.isDelivering = false;
+        this.gameActive = false;
+        this.totalBagsToDeliver = n * 3;
+        this.totalBagsDelivered = 0;
+        // Posición inicial: calle exterior col=1, fila=0
+        this.gridX = 1; this.gridY = 0;
+        this.targetGridX = 1; this.targetGridY = 0;
+        this.isMoving = false;
+        this.moveProgress = 0;
+        this.willCrash = false;
+        this.centroTween = null;
+        this.fuelBlinkTw = null;
+        this._menuObjs = [];
+        this.obstacleGrid = {};
+        this.bagsGrid = {};
+      }
+
+      create() {
+        const T = CONFIG.TILE;
+
+        this.drawMap();
+
+        this.obstaclesGroup = this.physics.add.staticGroup();
+        this.bagsGroup = this.physics.add.group();
+
+        this.placeObstacles();
+        this.placeBags();
+
+        // Centro URRA (imagen limpia)
+        const cX = 18 * T + T / 2, cY = 18 * T + T / 2;
+        this.centroSprite = this.add.image(cX, cY, 'centro_reciclado')
+          .setDisplaySize(T * 3.2, T * 3.2).setDepth(2);
+        this.add.text(cX, cY + T * 1.7, 'URRA ♻️', {
+          fontFamily: 'Nunito', fontSize: '14px', fontStyle: 'bold', color: '#fff',
+          backgroundColor: '#1a88cc', padding: { x: 10, y: 4 }
+        }).setOrigin(0.5).setDepth(3);
+
+        // Camión (imagen limpia, sin fondo)
+        const sX = this.gridX * T + T / 2, sY = this.gridY * T + T / 2;
+        this.truck = this.add.image(sX, sY, 'camion')
+          .setDisplaySize(T * 2.0, T * 2.0).setDepth(5).setAngle(180);
+
+        this.cameras.main.startFollow(this.truck, true, 0.11, 0.11);
+        this.cameras.main.setZoom(1);
+        this.physics.world.setBounds(0, 0, CONFIG.MAP_COLS * T, CONFIG.MAP_ROWS * T);
+
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.wasd = this.input.keyboard.addKeys({
+          up: Phaser.Input.Keyboard.KeyCodes.W,
+          down: Phaser.Input.Keyboard.KeyCodes.S,
+          left: Phaser.Input.Keyboard.KeyCodes.A,
+          right: Phaser.Input.Keyboard.KeyCodes.D
+        });
+        this.joystickDir = { x: 0, y: 0 };
+        this.joystickActive = false;
+        this.createJoystick();
+
+        // Tooltip
+        this.tooltipTxt = this.add.text(0, 0, '', {
+          fontFamily: 'Nunito', fontSize: '12px', color: '#fff',
+          backgroundColor: 'rgba(0,0,0,0.82)', padding: { x: 7, y: 4 }
+        }).setOrigin(0.5, 1).setDepth(120).setVisible(false);
+
+        this.createHUD();
+
+        document.getElementById('overlay-container').className = '';
+        document.getElementById('gameover-panel').className = 'overlay-panel';
+        document.getElementById('victory-panel').className = 'overlay-panel';
+
+        if (this.fromMenu) {
+          this.showMenu();
+        } else {
+          this.startGameplay();
+        }
+      }
+
+      // ─── MAPA ──────────────────────────────────────────────────
+      drawMap() {
+        const T = CONFIG.TILE;
+        this.wallsGroup = this.physics.add.staticGroup();
+
+        for (let r = 0; r < CONFIG.MAP_ROWS; r++) {
+          for (let c = 0; c < CONFIG.MAP_COLS; c++) {
+            const tile = MAP_DATA[r][c];
+            const px = c * T + T / 2, py = r * T + T / 2;
+            const texKey = tile === 0 ? 'tile_manzana'
+              : tile === 1 ? 'calle'
+                : tile === 2 ? 'tile_plaza'
+                  : 'tile_centro';
+            const img = this.add.image(px, py, texKey).setDepth(0);
+
+            if (tile === 1) { // es una calle
+              // Determinar vecinos transitables para orientar las líneas de la calle
+              const isRoad = (col, row) => (row >= 0 && row < CONFIG.MAP_ROWS && col >= 0 && col < CONFIG.MAP_COLS && MAP_DATA[row][col] > 0);
+              const left = isRoad(c - 1, r);
+              const right = isRoad(c + 1, r);
+              const up = isRoad(c, r - 1);
+              const down = isRoad(c, r + 1);
+
+              // Si es una calle vertical y no horizontal, rotar 90 grados
+              if ((up || down) && !left && !right) {
+                img.setAngle(90);
+              } else if ((left || right) && !up && !down) {
+                img.setAngle(0);
+              } else {
+                // Intersecciones/cruces
+                img.setAngle(0);
+              }
+            }
+
+            if (tile === 0) {
+              const w = this.wallsGroup.create(px, py, 'tile_manzana');
+              w.setDisplaySize(T, T).setVisible(false).refreshBody();
+            }
+          }
+        }
+
+        // Mezclar las casas de forma dinámica y balanceada por manzana
+        const houseKeys = ['casa_azul', 'casa_roja', 'casa_amarilla'];
+        for (let r = 1; r < CONFIG.MAP_ROWS - 2; r += 3) {
+          for (let c = 1; c < CONFIG.MAP_COLS - 2; c += 3) {
+            // Excluir zona plaza (cols 9-11, filas 9-11)
+            if (c >= 8 && c <= 12 && r >= 8 && r <= 12) continue;
+            // Excluir zona URRA (cols 16+, filas 16+)
+            if (c >= 16 && r >= 16) continue;
+            // Centro de la manzana: los 4 cuadrantes internos (2×2) tienen su centro en:
+            const px = c * T + T;   // c*T + T/2 + T/2 = c*T + T
+            const py = r * T + T;
+
+            const houseIndex = (Math.floor(r / 3) + Math.floor(c / 3)) % 3;
+            const currentHouseKey = houseKeys[houseIndex];
+
+            this.add.image(px, py, currentHouseKey)
+              .setDisplaySize(T * 2, T * 2)
+              .setDepth(1);
+          }
+        }
+      }
+
+      // ─── OBSTÁCULOS ────────────────────────────────────────────
+      placeObstacles() {
+        const T = CONFIG.TILE;
+        const min = this.level === 1 ? CONFIG.OBS_MIN_L1 : CONFIG.OBS_MIN_L2;
+        const max = this.level === 1 ? CONFIG.OBS_MAX_L1 : CONFIG.OBS_MAX_L2;
+        const count = Phaser.Math.Between(min, max);
+        const forbidden = new Set();
+
+        for (let r = 16; r < 20; r++) for (let c = 16; c < 20; c++) forbidden.add(r + ',' + c);
+        for (let r = 8; r < 13; r++) for (let c = 8; c < 13; c++) forbidden.add(r + ',' + c);
+        ['0,0', '0,1', '0,2', '0,3', '1,0', '2,0', '3,0'].forEach(k => forbidden.add(k));
+
+        let placed = 0, attempts = 0;
+        while (placed < count && attempts < 400) {
+          attempts++;
+          const c = Phaser.Math.Between(1, CONFIG.MAP_COLS - 2);
+          const r = Phaser.Math.Between(1, CONFIG.MAP_ROWS - 2);
+          if (MAP_DATA[r][c] !== 1) continue;
+          if (forbidden.has(r + ',' + c)) continue;
+
+          const px = c * T + T / 2, py = r * T + T / 2;
+
+          let obs;
+          if (this.textures.exists('work_anim') && this.anims.exists('work_flash')) {
+            obs = this.obstaclesGroup.create(px, py, 'work_anim');
+            obs.play('work_flash');
+          } else {
+            obs = this.obstaclesGroup.create(px, py, 'work');
+            this.tweens.add({
+              targets: obs, alpha: 0.55,
+              duration: 300 + Math.random() * 200,
+              yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+            });
+          }
+
+          obs.setDisplaySize(T * 0.92, T * 0.92).setDepth(3);
+          obs.body.setSize(T * 0.48, T * 0.48);
+          obs.refreshBody();
+
+          forbidden.add(r + ',' + c);
+          this.obstacleGrid[r + ',' + c] = true;
+          placed++;
+        }
+      }
+
+      // ─── BOLSAS ────────────────────────────────────────────────
+      placeBags() {
+        const T = CONFIG.TILE;
+        const tipos = [
+          { key: 'bolsa_verde', type: 'verde', tip: 'Orgánicos: comida, yerba, cáscaras...' },
+          { key: 'bolsa_negra', type: 'negra', tip: 'Reciclables: plástico, cartón, vidrio...' },
+          { key: 'bolsa_roja', type: 'roja', tip: 'Sanitarios / peligrosos ☣' }
+        ];
+        const occupied = new Set();
+        for (const pos in this.obstacleGrid) occupied.add(pos);
+        for (let r = 16; r < 20; r++) for (let c = 16; c < 20; c++) occupied.add(r + ',' + c);
+        ['0,0', '0,1', '0,2', '1,0', '2,0'].forEach(k => occupied.add(k));
+
+        tipos.forEach(t => {
+          let placed = 0, attempts = 0;
+          while (placed < this.bagsPerType && attempts < 400) {
+            attempts++;
+            const c = Phaser.Math.Between(1, CONFIG.MAP_COLS - 2);
+            const r = Phaser.Math.Between(1, CONFIG.MAP_ROWS - 2);
+            if (MAP_DATA[r][c] !== 1 && MAP_DATA[r][c] !== 2) continue;
+            if (occupied.has(r + ',' + c)) continue;
+
+            const px = c * T + T / 2, py = r * T + T / 2;
+            const bag = this.bagsGroup.create(px, py, t.key);
+            bag.setDisplaySize(T * 0.66, T * 0.66).setDepth(2);
+            bag.body.setSize(T * 0.44, T * 0.44);
+            bag.setData('type', t.type);
+            bag.setData('tip', t.tip);
+
+            this.tweens.add({
+              targets: bag, y: py - 6,
+              duration: 750 + Math.random() * 400,
+              yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+            });
+
+            occupied.add(r + ',' + c);
+            this.bagsGrid[r + ',' + c] = bag;
+            placed++;
+          }
+        });
+      }
+
+      // ─── JOYSTICK ──────────────────────────────────────────────
+      createJoystick() {
+        const hasTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        if (!hasTouch) return;
+        const BR = 58, TR = 24, BX = 100, BY = 500;
+        this.joyBase = this.add.circle(BX, BY, BR, 0x1a2a44, 0.5).setScrollFactor(0).setDepth(200);
+        const ring = this.add.circle(BX, BY, BR, 0, 0).setScrollFactor(0).setDepth(200);
+        ring.setStrokeStyle(2, 0x4ecdc4, 0.65);
+        this.joyThumb = this.add.circle(BX, BY, TR, 0xffffff, 0.75).setScrollFactor(0).setDepth(201);
+
+        this.input.on('pointerdown', p => {
+          if (p.x < 210 && p.y > 370) {
+            this.joystickActive = true;
+            this.joyPtrId = p.id;
+          }
+        });
+        this.input.on('pointermove', p => {
+          if (!this.joystickActive || p.id !== this.joyPtrId) return;
+          const dx = p.x - BX, dy = p.y - BY;
+          const dist = Math.min(BR, Math.hypot(dx, dy));
+          const ang = Math.atan2(dy, dx);
+          this.joyThumb.x = BX + Math.cos(ang) * dist;
+          this.joyThumb.y = BY + Math.sin(ang) * dist;
+          if (dist / BR < 0.25) {
+            this.joystickDir = { x: 0, y: 0 };
+          } else if (Math.abs(dx) >= Math.abs(dy)) {
+            this.joystickDir = { x: dx > 0 ? 1 : -1, y: 0 };
+          } else {
+            this.joystickDir = { x: 0, y: dy > 0 ? 1 : -1 };
+          }
+        });
+        this.input.on('pointerup', p => {
+          if (p.id === this.joyPtrId) {
+            this.joystickActive = false;
+            this.joystickDir = { x: 0, y: 0 };
+            this.joyThumb.x = BX; this.joyThumb.y = BY;
+          }
+        });
+      }
+
+      // ─── HUD ───────────────────────────────────────────────────
+      createHUD() {
+        const W = this.cameras.main.width;
+        this.hudCont = this.add.container(0, 0).setScrollFactor(0).setDepth(150);
+
+        // Fondo HUD
+        const bg = this.add.graphics().setScrollFactor(0);
+        bg.fillStyle(0x080e1c, 0.94); bg.fillRect(0, 0, W, 72);
+        bg.lineStyle(2, 0x4ecdc4, 0.3); bg.lineBetween(0, 72, W, 72);
+
+        // Combustible
+        this.add.text(16, 9, '⛽', { fontSize: '18px' }).setScrollFactor(0);
+        const fBg = this.add.graphics().setScrollFactor(0);
+        fBg.fillStyle(0x1a2436, 1); fBg.fillRoundedRect(46, 12, 150, 16, 6);
+        this.fuelGfx = this.add.graphics().setScrollFactor(0);
+        this.fuelPctTxt = this.add.text(121, 12, '100%', {
+          fontFamily: 'Nunito', fontSize: '11px', fontStyle: 'bold', color: '#fff'
+        }).setOrigin(0.5, 0).setScrollFactor(0);
+
+        // Nivel
+        this.levelTxt = this.add.text(16, 40, 'NIVEL ' + this.level, {
+          fontFamily: 'Nunito', fontSize: '12px', fontStyle: 'bold', color: '#4ecdc4'
+        }).setScrollFactor(0);
+
+        // Contadores de bolsas
+        this.bagCountTxt = this.add.text(80, 46, '', {
+          fontFamily: 'Nunito', fontSize: '11px', color: '#99aabb'
+        }).setScrollFactor(0);
+
+        // Slots bodega
+        this.cargoSlots = [];
+        for (let i = 0; i < CONFIG.BAG_CAP; i++) {
+          const sx = W / 2 - (CONFIG.BAG_CAP * 42) / 2 + i * 42 + 21;
+          const slBg = this.add.graphics().setScrollFactor(0);
+          slBg.fillStyle(0x141c30, 1); slBg.fillRoundedRect(sx - 17, 8, 34, 34, 7);
+          slBg.lineStyle(1.5, 0x252d48, 1); slBg.strokeRoundedRect(sx - 17, 8, 34, 34, 7);
+          this.cargoSlots.push({ x: sx, y: 25, icon: null });
+        }
+        this.cargoLblTxt = this.add.text(W / 2, 50, 'Bodega vacía', {
+          fontFamily: 'Nunito', fontSize: '12px', color: '#7888a0'
+        }).setOrigin(0.5).setScrollFactor(0);
+
+        // Puntos
+        this.scoreTxt = this.add.text(W - 16, 10, '0', {
+          fontFamily: 'Nunito', fontSize: '28px', fontStyle: 'bold', color: '#ffd700'
+        }).setOrigin(1, 0).setScrollFactor(0);
+        this.add.text(W - 16, 44, 'PUNTOS', {
+          fontFamily: 'Nunito', fontSize: '11px', color: '#556677'
+        }).setOrigin(1, 0).setScrollFactor(0);
+
+        this.hudCont.setVisible(false);
+      }
+
+      refreshFuel() {
+        const pct = Math.max(0, this.fuel);
+        const w = 150 * (pct / 100);
+        this.fuelGfx.clear();
+        let col = 0x2ecc71;
+        if (pct <= 25) col = 0xe74c3c;
+        else if (pct <= 50) col = 0xf1c40f;
+        this.fuelGfx.fillStyle(col, 1);
+        this.fuelGfx.fillRoundedRect(46, 12, w, 16, 6);
+        // brillo superior
+        this.fuelGfx.fillStyle(0xffffff, 0.15);
+        this.fuelGfx.fillRoundedRect(46, 12, w, 7, { tl: 6, tr: 6, bl: 0, br: 0 });
+        this.fuelPctTxt.setText(Math.round(pct) + '%');
+      }
+
+      refreshCargo() {
+        this.cargoSlots.forEach(s => { if (s.icon) { s.icon.destroy(); s.icon = null; } });
+        for (let i = 0; i < this.cargoCount; i++) {
+          const s = this.cargoSlots[i];
+          const tk = this.cargoType === 'negra' ? 'bolsa_negra'
+            : this.cargoType === 'roja' ? 'bolsa_roja'
+              : 'bolsa_verde';
+          s.icon = this.add.image(s.x, s.y, tk)
+            .setDisplaySize(28, 28).setScrollFactor(0).setDepth(151);
+        }
+        if (this.cargoCount === 0) {
+          this.cargoLblTxt.setText('Bodega vacía').setColor('#7888a0');
+        } else {
+          const nm = { verde: '🟢 Orgánicos', negra: '⚫ Reciclables', roja: '🔴 Sanitarios' };
+          const cl = { verde: '#2ecc71', negra: '#aabbcc', roja: '#e74c3c' };
+          this.cargoLblTxt.setText((nm[this.cargoType] || '') + ' · ' + this.cargoCount + '/' + CONFIG.BAG_CAP);
+          this.cargoLblTxt.setColor(cl[this.cargoType] || '#fff');
+        }
+      }
+
+      refreshScore() {
+        this.scoreTxt.setText(this.score.toString());
+        this.tweens.add({ targets: this.scoreTxt, scaleX: 1.32, scaleY: 1.32, duration: 110, yoyo: true });
+      }
+
+      refreshBagCounts() {
+        this.bagCountTxt.setText(
+          '🟢' + this.bagsRemaining.verde +
+          ' ⚫' + this.bagsRemaining.negra +
+          ' 🔴' + this.bagsRemaining.roja
+        );
+      }
+
+      // ─── MENÚ ──────────────────────────────────────────────────
+      showMenu() {
+        this.gameActive = false;
+        this._menuObjs = [];
+        const m = (o) => { this._menuObjs.push(o); return o; };
+
+        const fade = m(this.add.graphics().setScrollFactor(0).setDepth(300));
+        fade.fillStyle(0x0a0f1a, 0.92); fade.fillRect(0, 0, 800, 600);
+
+        const panel = m(this.add.graphics().setScrollFactor(0).setDepth(301));
+        panel.fillStyle(0x0a1526, 0.98);
+        panel.fillRoundedRect(196, 64, 408, 472, 20);
+        panel.lineStyle(3, 0x4ecdc4, 1);
+        panel.strokeRoundedRect(196, 64, 408, 472, 20);
+        panel.lineStyle(1, 0x4ecdc4, 0.18);
+        panel.strokeRoundedRect(204, 72, 392, 456, 16);
+
+        m(this.add.text(400, 103, '♻️ RECICLADO URRA', {
+          fontFamily: 'Nunito', fontSize: '29px', fontStyle: 'bold', color: '#4ecdc4'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
+
+        m(this.add.text(400, 138, 'Rauch, Buenos Aires', {
+          fontFamily: 'Nunito', fontSize: '15px', color: '#5a8090'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
+
+        const sep = m(this.add.graphics().setScrollFactor(0).setDepth(302));
+        sep.lineStyle(1, 0x4ecdc4, 0.22); sep.lineBetween(216, 158, 584, 158);
+
+        const lines = [
+          '🚛  Manejá el camión sólo por las calles',
+          '🟢  Juntá bolsas del mismo tipo de residuo',
+          '♻️  Llevá la carga al centro URRA  (↘ esquina)',
+          '🚫  ¡No mezcles colores en la bodega!',
+          '⛽  ¡Controlá el combustible!',
+          '✅  ¡Juntá todas las bolsas para ganar!'
+        ];
+        lines.forEach((txt, i) => {
+          m(this.add.text(400, 172 + i * 38, txt, {
+            fontFamily: 'Nunito', fontSize: '14.5px', color: '#ccdcee'
+          }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
+        });
+
+        const btnBg = m(this.add.graphics().setScrollFactor(0).setDepth(302));
+        const drawBtn = (hov) => {
+          btnBg.clear();
+          const c = hov ? 0xff8888 : 0xff6b6b;
+          btnBg.fillStyle(c, 1);
+          btnBg.fillRoundedRect(298, 402, 204, 54, 14);
+          if (!hov) {
+            btnBg.fillStyle(0xffa0a0, 0.3);
+            btnBg.fillRoundedRect(300, 404, 200, 18, { tl: 12, tr: 12, bl: 0, br: 0 });
+          }
         };
+        drawBtn(false);
 
-        /* 3. LEAFLET MAP */
-        const map = L.map('map').setView([gridLat, gridLng], 14);
+        m(this.add.text(400, 429, '¡JUGAR!', {
+          fontFamily: 'Nunito', fontSize: '26px', fontStyle: 'bold', color: '#fff'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(303));
 
-        // Volvemos al mapa vivo estándar de OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 18
-        }).addTo(map);
+        const zone = m(this.add.zone(400, 429, 204, 54).setInteractive().setScrollFactor(0).setDepth(303));
+        zone.on('pointerover', () => drawBtn(true));
+        zone.on('pointerout', () => drawBtn(false));
+        zone.on('pointerdown', () => {
+          this._menuObjs.forEach(o => { try { o.destroy(); } catch (e) { } });
+          this._menuObjs = [];
+          this.startGameplay();
+        });
 
-        let geojsonLayer;
+        m(this.add.text(400, 472, 'Flechas / WASD  •  Táctil: Joystick', {
+          fontFamily: 'Nunito', fontSize: '12.5px', color: '#445566'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
+      }
 
-        function styleFeature(feature) {
-            const count = feature.properties.count;
-            const baseColor = feature.properties.baseColor;
+      startGameplay() {
+        this.gameActive = true;
+        this.hudCont.setVisible(true);
+        this.refreshFuel();
+        this.refreshCargo();
+        this.refreshScore();
+        this.refreshBagCounts();
+        this.truck.setAlpha(0);
+        this.tweens.add({ targets: this.truck, alpha: 1, duration: 350, ease: 'Sine.easeIn' });
+      }
 
-            // Si no tiene datos: Usa su color base pero muy transparente
-            // Si tiene datos: Mantiene su color base pero se vuelve opaco y vibrante
-            let fillOpacity = 0.2; // Vacío
-            let weight = 2;
-            let color = '#ffffff';
+      // ─── UPDATE ────────────────────────────────────────────────
+      update(time, delta) {
+        if (!this.gameActive || this.isGameOver || this.isDelivering) return;
 
-            if (count > 0) {
-                fillOpacity = 0.6; // Con datos (vivo)
-                color = '#000000'; // Borde oscuro para resaltar
+        const T = CONFIG.TILE;
+
+        if (!this.isMoving) {
+          let dx = 0, dy = 0;
+          if (this.cursors.left.isDown || this.wasd.left.isDown) dx = -1;
+          else if (this.cursors.right.isDown || this.wasd.right.isDown) dx = 1;
+          else if (this.cursors.up.isDown || this.wasd.up.isDown) dy = -1;
+          else if (this.cursors.down.isDown || this.wasd.down.isDown) dy = 1;
+
+          if (this.joystickActive && (this.joystickDir.x || this.joystickDir.y)) {
+            dx = this.joystickDir.x; dy = this.joystickDir.y;
+          }
+
+          if (dx || dy) {
+            const nx = this.gridX + dx, ny = this.gridY + dy;
+            if (nx >= 0 && nx < CONFIG.MAP_COLS && ny >= 0 && ny < CONFIG.MAP_ROWS) {
+              if (MAP_DATA[ny][nx] > 0) {  // solo calle, plaza o centro
+                this.targetGridX = nx;
+                this.targetGridY = ny;
+                this.isMoving = true;
+                this.moveProgress = 0;
+                this.setTruckAngle(dx, dy);
+                this.willCrash = !!this.obstacleGrid[ny + ',' + nx];
+              }
             }
-            if (count > 2) {
-                fillOpacity = 0.8; // Muy activo
-            }
-            if (count > 5) {
-                fillOpacity = 1.0; // Súper activo
-            }
-
-            return {
-                fillColor: baseColor,
-                weight: count > 0 ? 3 : 2,
-                opacity: 1,
-                color: color,
-                dashArray: count === 0 ? '4' : '',
-                fillOpacity: fillOpacity
-            };
+          }
         }
 
-        function onEachFeature(feature, layer) {
-            layer.on({
-                mouseover: function (e) {
-                    const l = e.target;
-                    l.setStyle({ weight: 4, color: '#FFC107', dashArray: '' });
-                    l.bringToFront();
+        if (this.isMoving) {
+          this.moveProgress += (CONFIG.MOVE_SPEED * delta) / 1000;
 
-                    const p = feature.properties;
-                    let tooltipContent = `<div class="custom-tooltip"><h4>${p.name}</h4>`;
+          this.fuel -= (CONFIG.FUEL_RATE * delta) / 1000;
+          if (this.fuel <= 0) {
+            this.fuel = 0; this.refreshFuel();
+            this.gameOver('SIN COMBUSTIBLE 😢'); return;
+          }
+          this.refreshFuel();
+          if (this.fuel < CONFIG.FUEL_WARN) this.startFuelBlink();
 
-                    if (p.count === 0) {
-                        tooltipContent += `<p style="color: #666;">Sin relevamientos. ¡Sé el primero!</p>`;
-                    } else {
-                        tooltipContent += `<p><b>✅ Registros:</b> ${p.count}</p>`;
-                        if (p.lastData) {
-                            tooltipContent += `<p style="font-size:0.85rem; margin-top:6px; color:#555;">Último: ${p.lastData.alumno}</p>`;
-                        }
-                    }
-                    tooltipContent += `</div>`;
-
-                    l.bindTooltip(tooltipContent, { direction: 'top', className: 'leaflet-tooltip-own' }).openTooltip();
-                },
-                mouseout: function (e) {
-                    geojsonLayer.resetStyle(e.target);
-                    e.target.closeTooltip();
-                },
-                click: function (e) {
-                    openFormModal(feature.properties.id, feature.properties.name);
-                }
-            });
+          if (this.moveProgress >= 1) {
+            const tx = this.targetGridX, ty = this.targetGridY;
+            this.truck.x = tx * T + T / 2;
+            this.truck.y = ty * T + T / 2;
+            this.gridX = tx; this.gridY = ty;
+            this.isMoving = false;
+            this.moveProgress = 0;
+            if (this.willCrash) { this.triggerCrash(); return; }
+            this.checkCell();
+          } else {
+            const sx = this.gridX * T + T / 2, sy = this.gridY * T + T / 2;
+            const ex = this.targetGridX * T + T / 2, ey = this.targetGridY * T + T / 2;
+            this.truck.x = sx + (ex - sx) * this.moveProgress;
+            this.truck.y = sy + (ey - sy) * this.moveProgress;
+            if (this.willCrash && this.moveProgress >= 0.5) { this.triggerCrash(); return; }
+          }
         }
 
-        function renderMap() {
-            if (geojsonLayer) map.removeLayer(geojsonLayer);
-            geojsonLayer = L.geoJSON(SECTORES_RAUCH, {
-                style: styleFeature,
-                onEachFeature: onEachFeature
-            }).addTo(map);
+        this.updateTooltip();
+
+        // Pulso del centro cuando hay carga
+        if (this.cargoCount > 0 && !this.centroTween) {
+          const bs = this.centroSprite.scaleX;
+          this.centroTween = this.tweens.add({
+            targets: this.centroSprite, scaleX: bs * 1.04, scaleY: bs * 1.04,
+            duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+          });
+        } else if (this.cargoCount === 0 && this.centroTween) {
+          this.centroTween.stop();
+          this.centroSprite.setDisplaySize(CONFIG.TILE * 3.2, CONFIG.TILE * 3.2);
+          this.centroTween = null;
         }
+      }
 
-        renderMap();
+      setTruckAngle(dx, dy) {
+        let angle = 0;
+        if (dx === 1) angle = 90;
+        if (dx === -1) angle = 270;
+        if (dy === 1) angle = 180;
+        if (dy === -1) angle = 0;
+        this.tweens.add({ targets: this.truck, angle, duration: 75, ease: 'Linear' });
+      }
 
-        /* 4. UI MODALS */
-        window.openModal = function (id) { document.getElementById(id).classList.add('active'); }
-        window.closeModal = function (id) { document.getElementById(id).classList.remove('active'); }
+      triggerCrash() {
+        if (this.isGameOver) return;
+        this.cameras.main.shake(440, 0.022);
+        this.cameras.main.flash(280, 255, 40, 0);
+        this.gameOver('¡CHOCASTE con una obra! 💥');
+      }
 
-        window.openFormModal = function (sectorId, sectorName) {
-            document.getElementById('relevamiento-form').reset();
-            document.getElementById('sector-id').value = sectorId;
-            document.getElementById('sector-nombre').value = sectorName;
-
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('fecha-hora').value = now.toISOString().slice(0, 16);
-
-            openModal('form-modal');
+      checkCell() {
+        const r = this.gridY, c = this.gridX;
+        const key = r + ',' + c;
+        if (this.bagsGrid[key]) {
+          const bag = this.bagsGrid[key];
+          if (bag.active) { this.pickupBag(bag); if (!bag.active) delete this.bagsGrid[key]; }
         }
+        if (c >= 17 && c <= 19 && r >= 17 && r <= 19) this.reachCentro();
+      }
 
-        window.openStatsModal = function () {
-            updateCharts();
-            openModal('stats-modal');
+      updateTooltip() {
+        let closest = null, minD = 70;
+        this.bagsGroup.getChildren().forEach(b => {
+          if (!b.active) return;
+          const d = Phaser.Math.Distance.Between(this.truck.x, this.truck.y, b.x, b.y);
+          if (d < minD) { minD = d; closest = b; }
+        });
+        if (closest) {
+          this.tooltipTxt.setVisible(true)
+            .setText(closest.getData('tip'))
+            .setPosition(closest.x, closest.y - 34);
+        } else {
+          this.tooltipTxt.setVisible(false);
         }
+      }
 
-        window.openTeacherModal = function () { openModal('teacher-modal'); }
+      pickupBag(bag) {
+        if (this.isGameOver || this.isDelivering) return;
+        const type = bag.getData('type');
+        if (!this.cargoType) this.cargoType = type;
 
-        function showToast() {
-            const toast = document.getElementById('toast');
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
+        if (type !== this.cargoType) {
+          this.cameras.main.shake(500, 0.03);
+          this.cameras.main.flash(400, 255, 0, 0);
+          this.gameOver('¡CARGA CONTAMINADA! 🚫\nMezclaste tipos de residuos');
+          return;
         }
+        if (this.cargoCount >= CONFIG.BAG_CAP) return;
 
-        /* 5. FORM SUBMIT */
-        window.handleFormSubmit = async function (e) {
-            e.preventDefault();
+        this.cargoCount++;
+        this.bagsRemaining[type]--;
 
-            const residuosChecked = Array.from(document.querySelectorAll('input[name="residuo"]:checked')).map(cb => cb.value);
+        const tint = type === 'verde' ? 0x2ecc71 : type === 'negra' ? 0x7f8c9a : 0xe74c3c;
+        const em = this.add.particles(bag.x, bag.y, 'particle', {
+          speed: { min: 40, max: 120 }, lifespan: 360, quantity: 14,
+          scale: { start: 1, end: 0 }, tint
+        });
+        this.time.delayedCall(450, () => em.destroy());
 
-            const data = {
-                sectorId: document.getElementById('sector-id').value,
-                sectorNombre: document.getElementById('sector-nombre').value,
-                fecha: document.getElementById('fecha-hora').value,
-                alumno: document.getElementById('alumno-nombre').value,
-                grado: document.getElementById('alumno-grado').value,
-                tiposResiduos: residuosChecked,
-                cantidadBasura: document.getElementById('cantidad-basura').value,
-                frecuenciaRecoleccion: document.getElementById('frecuencia').value,
-                contenedores: document.querySelector('input[name="contenedores"]:checked').value,
-                basuraFuera: document.querySelector('input[name="basura-fuera"]:checked').value,
-                observaciones: document.getElementById('observaciones').value
-            };
+        bag.setActive(false);
+        this.tweens.add({
+          targets: bag, scaleX: 0, scaleY: 0, alpha: 0, duration: 160,
+          onComplete: () => bag.destroy()
+        });
+        this.refreshCargo();
+      }
 
-            if (isFirebaseConfigured) {
-                try {
-                    data.creadoEn = serverTimestamp();
-                    await addDoc(collection(db, "relevamientos"), data);
-                    closeModal('form-modal');
-                    showToast();
-                } catch (error) {
-                    alert("Error al guardar: " + error.message);
-                }
-            } else {
-                data.creadoEn = new Date();
-                todosLosRelevamientos.push(data);
-                processRelevamientos(todosLosRelevamientos);
-                closeModal('form-modal');
-                showToast();
-            }
-        }
+      reachCentro() {
+        if (this.isGameOver || this.isDelivering) return;
+        // Recargar combustible siempre
+        this.fuel = CONFIG.FUEL_FULL;
+        this.refreshFuel();
+        if (this.fuelBlinkTw) { this.fuelBlinkTw.stop(); this.fuelBlinkTw = null; this.fuelGfx.setAlpha(1); }
+        if (this.cargoCount === 0) return;
 
-        /* 6. SYNC FIRESTORE */
-        if (isFirebaseConfigured) {
-            onSnapshot(collection(db, "relevamientos"), (snapshot) => {
-                const registros = [];
-                snapshot.forEach((doc) => registros.push(doc.data()));
-                todosLosRelevamientos = registros;
-                processRelevamientos(registros);
-            });
-        }
+        this.isDelivering = true;
+        const pts = this.cargoCount * 10;
+        let bonus = 0;
+        const isFullLoad = this.cargoCount >= CONFIG.BAG_CAP;
+        if (isFullLoad) bonus += 25;
 
-        function processRelevamientos(registros) {
-            SECTORES_RAUCH.features.forEach(f => {
-                f.properties.count = 0;
-                f.properties.lastData = null;
-            });
+        const dType = this.cargoType;
+        this.totalDelivered[dType] += this.cargoCount;
+        this.totalBagsDelivered += this.cargoCount;
 
-            registros.forEach(reg => {
-                const feature = SECTORES_RAUCH.features.find(f => f.properties.id === reg.sectorId);
-                if (feature) {
-                    feature.properties.count++;
-                    if (!feature.properties.lastData || new Date(reg.fecha) > new Date(feature.properties.lastData.fechaRaw)) {
-                        feature.properties.lastData = {
-                            alumno: reg.alumno,
-                            fechaRaw: reg.fecha,
-                            fechaFormat: new Date(reg.fecha).toLocaleDateString('es-AR')
-                        };
-                    }
-                }
-            });
-            renderMap();
-        }
+        const typeClean = (this.bagsRemaining[dType] === 0 && this.totalDelivered[dType] >= this.bagsPerType);
+        if (typeClean) bonus += 50;
 
-        /* 7. CHARTS */
-        let barChartInst = null;
-        let pieChartInst = null;
+        this.score += (pts + bonus);
+        const T = CONFIG.TILE;
+        const cx = 18 * T + T / 2, cy = 18 * T + T / 2;
+        this.floatText(cx, cy - 80, '+' + pts + ' pts', '#ffd700', 30);
+        if (isFullLoad) this.time.delayedCall(200, () => this.floatText(cx, cy - 118, '¡BODEGA COMPLETA! +25', '#e84393', 21));
+        if (typeClean) this.time.delayedCall(440, () => this.floatText(cx, cy - 148, '¡TIPO LIMPIO! ♻️ +50', '#2ecc71', 21));
 
-        function updateCharts() {
-            const total = todosLosRelevamientos.length;
-            document.getElementById('stat-total').innerText = total;
+        this.cargoCount = 0;
+        this.cargoType = null;
 
-            if (total === 0) return;
+        this.time.delayedCall(900, () => {
+          this.isDelivering = false;
+          this.refreshCargo();
+          this.refreshScore();
+          this.refreshBagCounts();
+          if (this.totalBagsDelivered >= this.totalBagsToDeliver) {
+            if (this.level === 1) this.nextLevel();
+            else this.victory();
+          }
+        });
+        this.refreshCargo();
+        this.refreshScore();
+        this.refreshBagCounts();
+      }
 
-            const sectorCounts = {};
-            const residuoCounts = {};
-            const basuraFueraSector = {};
+      floatText(x, y, text, color, size) {
+        const t = this.add.text(x, y, text, {
+          fontFamily: 'Nunito', fontSize: size + 'px', fontStyle: 'bold',
+          color, stroke: '#080e1c', strokeThickness: 4
+        }).setOrigin(0.5).setDepth(100);
+        this.tweens.add({ targets: t, y: y - 80, alpha: 0, duration: 1300, ease: 'Power2', onComplete: () => t.destroy() });
+        this.tweens.add({ targets: t, scaleX: 1.3, scaleY: 1.3, duration: 120, yoyo: true });
+      }
 
-            todosLosRelevamientos.forEach(r => {
-                sectorCounts[r.sectorNombre] = (sectorCounts[r.sectorNombre] || 0) + 1;
-                r.tiposResiduos.forEach(res => residuoCounts[res] = (residuoCounts[res] || 0) + 1);
-                if (r.basuraFuera === 'Sí' || r.basuraFuera === 'A veces') {
-                    basuraFueraSector[r.sectorNombre] = (basuraFueraSector[r.sectorNombre] || 0) + 1;
-                }
-            });
+      startFuelBlink() {
+        if (this.fuelBlinkTw) return;
+        this.fuelBlinkTw = this.tweens.add({
+          targets: this.fuelGfx, alpha: 0.2, duration: 260, yoyo: true, repeat: -1
+        });
+      }
 
-            const topSector = Object.keys(sectorCounts).reduce((a, b) => sectorCounts[a] > sectorCounts[b] ? a : b);
-            document.getElementById('stat-top-sector').innerText = topSector;
+      nextLevel() {
+        this.isGameOver = true;
+        this.gameActive = false;
+        const cam = this.cameras.main;
+        const sx = cam.scrollX, sy = cam.scrollY;
+        const W = cam.width, H = cam.height;
+        const cx = sx + W / 2, cy = sy + H / 2;
 
-            const topResiduo = Object.keys(residuoCounts).reduce((a, b) => residuoCounts[a] > residuoCounts[b] ? a : b);
-            document.getElementById('stat-top-residuo').innerText = topResiduo;
+        const fade = this.add.graphics().setDepth(500);
+        fade.fillStyle(0x080e1c, 0.92);
+        fade.fillRect(sx, sy, W, H);
 
-            const ctxBar = document.getElementById('barChart').getContext('2d');
-            if (barChartInst) barChartInst.destroy();
-            barChartInst = new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(sectorCounts),
-                    datasets: [{
-                        label: 'Relevamientos por Sector',
-                        data: Object.values(sectorCounts),
-                        backgroundColor: '#4CAF50'
-                    }]
-                },
-                options: { indexAxis: 'y', responsive: true }
-            });
+        const panel = this.add.graphics().setDepth(501);
+        panel.fillStyle(0x0a1a2e, 0.99);
+        panel.fillRoundedRect(cx - 210, cy - 95, 420, 190, 18);
+        panel.lineStyle(3, 0x4ecdc4, 1);
+        panel.strokeRoundedRect(cx - 210, cy - 95, 420, 190, 18);
 
-            const ctxPie = document.getElementById('pieChart').getContext('2d');
-            if (pieChartInst) pieChartInst.destroy();
-            pieChartInst = new Chart(ctxPie, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(residuoCounts),
-                    datasets: [{
-                        data: Object.values(residuoCounts),
-                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4CAF50', '#9966FF', '#FF9F40', '#C9CBCF']
-                    }]
-                },
-                options: { responsive: true, plugins: { legend: { position: 'right' } } }
-            });
+        this.add.text(cx, cy - 42, '¡NIVEL 1 COMPLETADO! 🎉', {
+          fontFamily: 'Nunito', fontSize: '23px', fontStyle: 'bold', color: '#ffd700'
+        }).setOrigin(0.5).setDepth(502);
 
-            const tbody = document.querySelector('#stats-table tbody');
-            tbody.innerHTML = '';
-            Object.keys(sectorCounts).forEach(sec => {
-                const tr = document.createElement('tr');
-                const problemas = basuraFueraSector[sec] || 0;
-                tr.innerHTML = `
-                    <td>${sec}</td>
-                    <td>${sectorCounts[sec]}</td>
-                    <td><span style="color:${problemas > 0 ? '#d32f2f' : '#2e7d32'}; font-weight:600;">${problemas} alertas</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+        this.add.text(cx, cy + 18, 'Preparando Nivel 2...\nMás bolsas y obstáculos 🚛💨', {
+          fontFamily: 'Nunito', fontSize: '16px', color: '#ffffff', align: 'center'
+        }).setOrigin(0.5).setDepth(502);
 
-        /* 8. PRINTING */
-        window.printMap = function () {
-            closeModal('teacher-modal');
-            setTimeout(() => { map.invalidateSize(); window.print(); }, 500);
-        }
+        this.time.delayedCall(3200, () => {
+          this.scene.restart({ level: 2, score: this.score, fromMenu: false });
+        });
+      }
 
-        window.printData = function () {
-            closeModal('teacher-modal');
-            let html = `
-                <html><head><title>Reporte - Rauch</title>
-                <style>
-                    body { font-family: 'Inter', Arial, sans-serif; padding: 30px; color: #333; }
-                    h1 { color: #1b5e20; text-align: center; margin-bottom: 5px; }
-                    .header-info { text-align: center; margin-bottom: 30px; color: #666; font-size: 14px; }
-                    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-                    th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
-                    th { background-color: #f5f5f5; color: #333; }
-                    @media print { thead { display: table-header-group; } }
-                </style>
-                </head><body>
-                <h1>Proyecto de Reciclado Sustentable</h1>
-                <div class="header-info">
-                    <p>Colegio Inmaculada Concepción, Rauch — Docente: Luz Faccio</p>
-                    <p>Total Registros: ${todosLosRelevamientos.length} | Fecha: ${new Date().toLocaleDateString('es-AR')}</p>
-                </div>
-                <table><thead><tr>
-                    <th>Fecha</th><th>Sector</th><th>Alumno</th><th>Grado</th><th>Residuos</th><th>Cantidad</th><th>Contenedores</th><th>Observaciones</th>
-                </tr></thead><tbody>
-            `;
+      gameOver(reason) {
+        if (this.isGameOver) return;
+        this.isGameOver = true; this.gameActive = false;
+        this.time.delayedCall(700, () => {
+          document.getElementById('go-reason').textContent = reason;
+          document.getElementById('go-score').textContent = this.score;
+          document.getElementById('go-name').value = '';
+          document.getElementById('go-leaderboard').style.display = 'none';
+          document.getElementById('gameover-panel').className = 'overlay-panel visible';
+          document.getElementById('overlay-container').className = 'active';
+        });
+      }
 
-            const ordenados = [...todosLosRelevamientos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-            ordenados.forEach(r => {
-                html += `<tr>
-                    <td>${new Date(r.fecha).toLocaleString('es-AR')}</td>
-                    <td><strong>${r.sectorNombre}</strong></td>
-                    <td>${r.alumno}</td>
-                    <td>${r.grado}</td>
-                    <td>${r.tiposResiduos.join(', ')}</td>
-                    <td>${r.cantidadBasura}</td>
-                    <td>${r.contenedores}</td>
-                    <td>${r.observaciones || ''}</td>
-                </tr>`;
-            });
-            html += `</tbody></table></body></html>`;
+      victory() {
+        if (this.isGameOver) return;
+        this.isGameOver = true; this.gameActive = false;
+        this.time.delayedCall(600, () => {
+          document.getElementById('vic-score').textContent = this.score;
+          document.getElementById('vic-name').value = '';
+          document.getElementById('vic-leaderboard').style.display = 'none';
+          document.getElementById('victory-panel').className = 'overlay-panel visible';
+          document.getElementById('overlay-container').className = 'active';
+        });
+      }
+    }
 
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(html);
-            printWindow.document.close();
-            setTimeout(() => printWindow.print(), 500);
-        }
-    </script>
+    // ═══════════════════════════════════════════════════════════
+    // LEADERBOARD
+    // ═══════════════════════════════════════════════════════════
+    async function saveScore(nombre, puntaje, motivo) {
+      const entry = { nombre, puntaje, motivo, fecha: new Date().toLocaleDateString('es-AR') };
+      if (CONFIG.jsonbinBinId === 'TU_BIN_ID_AQUI') {
+        let sc = JSON.parse(localStorage.getItem('urra_scores') || '[]');
+        sc.push(entry); sc.sort((a, b) => b.puntaje - a.puntaje); sc = sc.slice(0, 50);
+        localStorage.setItem('urra_scores', JSON.stringify(sc)); return sc;
+      }
+      try {
+        const r = await axios.get(CONFIG.jsonbinUrl() + '/latest', { headers: { 'X-Access-Key': CONFIG.jsonbinApiKey } });
+        let sc = Array.isArray(r.data.record) ? r.data.record : [];
+        sc.push(entry); sc.sort((a, b) => b.puntaje - a.puntaje); sc = sc.slice(0, 50);
+        await axios.put(CONFIG.jsonbinUrl(), sc, { headers: { 'X-Access-Key': CONFIG.jsonbinApiKey, 'Content-Type': 'application/json' } });
+        return sc;
+      } catch (e) { return []; }
+    }
+
+    function renderLB(tableEl, scores) {
+      const tbody = tableEl.querySelector('tbody');
+      tbody.innerHTML = '';
+      scores.slice(0, 10).forEach((s, i) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${medal}</td><td>${s.nombre || '???'}</td><td style="color:#ffd700;font-weight:bold;">${s.puntaje}</td><td>${s.fecha || ''}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('go-save').addEventListener('click', async () => {
+      const nm = document.getElementById('go-name').value.trim() || 'Anónimo';
+      const sc = await saveScore(nm, parseInt(document.getElementById('go-score').textContent), 'derrota');
+      renderLB(document.getElementById('leaderboard-table'), sc);
+      document.getElementById('go-leaderboard').style.display = 'block';
+    });
+    document.getElementById('go-retry').addEventListener('click', () => {
+      document.getElementById('overlay-container').className = '';
+      document.getElementById('gameover-panel').className = 'overlay-panel';
+      window.phaserGame.scene.getScene('GameScene').scene.restart({ level: 1, score: 0, fromMenu: false });
+    });
+    document.getElementById('vic-save').addEventListener('click', async () => {
+      const nm = document.getElementById('vic-name').value.trim() || 'Anónimo';
+      const sc = await saveScore(nm, parseInt(document.getElementById('vic-score').textContent), 'victoria');
+      renderLB(document.getElementById('vic-lb-table'), sc);
+      document.getElementById('vic-leaderboard').style.display = 'block';
+    });
+    document.getElementById('vic-retry').addEventListener('click', () => {
+      document.getElementById('overlay-container').className = '';
+      document.getElementById('victory-panel').className = 'overlay-panel';
+      window.phaserGame.scene.getScene('GameScene').scene.restart({ level: 1, score: 0, fromMenu: false });
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // INICIO PHASER
+    // ═══════════════════════════════════════════════════════════
+    window.phaserGame = new Phaser.Game({
+      type: Phaser.AUTO,
+      parent: 'game-container',
+      width: 800,
+      height: 600,
+      backgroundColor: '#0a0f1a',
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+      },
+      physics: {
+        default: 'arcade',
+        arcade: { debug: false }
+      },
+      scene: [BootScene, PreloadScene, GameScene],
+      input: { activePointers: 3 }
+    });
+  </script>
 </body>
 
 </html>
