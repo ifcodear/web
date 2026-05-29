@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>RECICLADO URRA — Rauch</title>
+  <title>UN RAUCH + LINDO </title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
@@ -332,7 +332,7 @@
         const cy = this.cameras.main.centerY;
         this.cameras.main.setBackgroundColor('#0a0f1a');
 
-        const letters = 'RECICLADO URRA'.split('');
+        const letters = 'UN RAUCH + LINDO'.split('');
         const totalW = letters.length * 22;
         letters.forEach((ch, i) => {
           const col = i < 9 ? '#4ecdc4' : '#ffd700';
@@ -572,8 +572,15 @@
           .setDisplaySize(T * 2.0, T * 2.0).setDepth(5).setAngle(180);
 
         this.cameras.main.startFollow(this.truck, true, 0.11, 0.11);
-        this.cameras.main.setZoom(1);
+        this.cameras.main.setZoom(1.0); // Forzar zoom a 1.0 para evitar que el HUD responsivo se desplace fuera de la pantalla debido a los límites de la cámara
+
         this.physics.world.setBounds(0, 0, CONFIG.MAP_COLS * T, CONFIG.MAP_ROWS * T);
+
+        // Ajustar límites de la cámara con un margen superior igual al alto del HUD
+        // para que las calles superiores y el camión nunca queden ocultos debajo de la barra de datos
+        const isMobile = this.cameras.main.width < 600;
+        const hudH = isMobile ? 116 : 72;
+        this.cameras.main.setBounds(0, -hudH, CONFIG.MAP_COLS * T, CONFIG.MAP_ROWS * T + hudH);
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd = this.input.keyboard.addKeys({
@@ -759,14 +766,18 @@
       createJoystick() {
         const hasTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
         if (!hasTouch) return;
-        const BR = 58, TR = 24, BX = 100, BY = 500;
+        const W = this.cameras.main.width;
+        const H = this.cameras.main.height;
+        const BR = 58, TR = 24;
+        const BX = 90, BY = H - 90; // Posición dinámica en base al alto de la pantalla
+
         this.joyBase = this.add.circle(BX, BY, BR, 0x1a2a44, 0.5).setScrollFactor(0).setDepth(200);
         const ring = this.add.circle(BX, BY, BR, 0, 0).setScrollFactor(0).setDepth(200);
         ring.setStrokeStyle(2, 0x4ecdc4, 0.65);
         this.joyThumb = this.add.circle(BX, BY, TR, 0xffffff, 0.75).setScrollFactor(0).setDepth(201);
 
         this.input.on('pointerdown', p => {
-          if (p.x < 210 && p.y > 370) {
+          if (p.x < BX + BR + 20 && p.y > BY - BR - 20) {
             this.joystickActive = true;
             this.joyPtrId = p.id;
           }
@@ -798,87 +809,153 @@
       // ─── HUD ───────────────────────────────────────────────────
       createHUD() {
         const W = this.cameras.main.width;
+        const isMobile = W < 600;
+        const hudH = isMobile ? 116 : 72;
+
         this.hudCont = this.add.container(0, 0).setScrollFactor(0).setDepth(150);
 
         // Fondo HUD
         const bg = this.add.graphics().setScrollFactor(0);
-        bg.fillStyle(0x080e1c, 0.94); bg.fillRect(0, 0, W, 72);
-        bg.lineStyle(2, 0x4ecdc4, 0.3); bg.lineBetween(0, 72, W, 72);
+        bg.fillStyle(0x080e1c, 0.94); bg.fillRect(0, 0, W, hudH);
+        bg.lineStyle(2, 0x4ecdc4, 0.3); bg.lineBetween(0, hudH, W, hudH);
+        this.hudCont.add(bg);
 
-        // Combustible
-        this.add.text(16, 9, '⛽', { fontSize: '18px' }).setScrollFactor(0);
-        const fBg = this.add.graphics().setScrollFactor(0);
-        fBg.fillStyle(0x1a2436, 1); fBg.fillRoundedRect(46, 12, 150, 16, 6);
-        this.fuelGfx = this.add.graphics().setScrollFactor(0);
-        this.fuelPctTxt = this.add.text(121, 12, '100%', {
-          fontFamily: 'Nunito', fontSize: '11px', fontStyle: 'bold', color: '#fff'
-        }).setOrigin(0.5, 0).setScrollFactor(0);
+        if (isMobile) {
+          // 📱 DISPOSICIÓN MÓVIL (Dos filas)
 
-        // Nivel
-        this.levelTxt = this.add.text(16, 40, 'NIVEL ' + this.level, {
-          fontFamily: 'Nunito', fontSize: '12px', fontStyle: 'bold', color: '#4ecdc4'
-        }).setScrollFactor(0);
+          // --- FILA 1: Combustible y Puntos ---
+          const fuelIcon = this.add.text(12, 10, '⛽', { fontSize: '18px' }).setScrollFactor(0);
+          const fBg = this.add.graphics().setScrollFactor(0);
+          fBg.fillStyle(0x1a2436, 1); fBg.fillRoundedRect(42, 12, 120, 16, 6);
+          this.fuelGfx = this.add.graphics().setScrollFactor(0);
+          this.fuelPctTxt = this.add.text(102, 12, '100%', {
+            fontFamily: 'Nunito', fontSize: '11px', fontStyle: 'bold', color: '#fff'
+          }).setOrigin(0.5, 0).setScrollFactor(0);
+          this.hudCont.add([fuelIcon, fBg, this.fuelGfx, this.fuelPctTxt]);
 
-        // Contadores de bolsas
-        this.bagCountTxt = this.add.text(80, 46, '', {
-          fontFamily: 'Nunito', fontSize: '11px', color: '#99aabb'
-        }).setScrollFactor(0);
+          this.scoreTxt = this.add.text(W - 12, 4, '0', {
+            fontFamily: 'Nunito', fontSize: '24px', fontStyle: 'bold', color: '#ffd700'
+          }).setOrigin(1, 0).setScrollFactor(0);
+          const scoreLbl = this.add.text(W - 12, 30, 'PUNTOS', {
+            fontFamily: 'Nunito', fontSize: '10px', color: '#556677'
+          }).setOrigin(1, 0).setScrollFactor(0);
+          this.hudCont.add([this.scoreTxt, scoreLbl]);
 
-        // Slots bodega
-        this.cargoSlots = [];
-        for (let i = 0; i < CONFIG.BAG_CAP; i++) {
-          const sx = W / 2 - (CONFIG.BAG_CAP * 42) / 2 + i * 42 + 21;
-          const slBg = this.add.graphics().setScrollFactor(0);
-          slBg.fillStyle(0x141c30, 1); slBg.fillRoundedRect(sx - 17, 8, 34, 34, 7);
-          slBg.lineStyle(1.5, 0x252d48, 1); slBg.strokeRoundedRect(sx - 17, 8, 34, 34, 7);
-          this.cargoSlots.push({ x: sx, y: 25, icon: null });
+          // --- FILA 2: Nivel, Contadores y Camión ---
+          this.levelTxt = this.add.text(12, 54, 'NIVEL ' + this.level, {
+            fontFamily: 'Nunito', fontSize: '11px', fontStyle: 'bold', color: '#4ecdc4'
+          }).setScrollFactor(0);
+          this.bagCountTxt = this.add.text(12, 72, '', {
+            fontFamily: 'Nunito', fontSize: '11px', color: '#99aabb'
+          }).setScrollFactor(0);
+          this.hudCont.add([this.levelTxt, this.bagCountTxt]);
+
+          this.cargoSlots = [];
+          const slotsStartX = W - (CONFIG.BAG_CAP * 34) - 12;
+          for (let i = 0; i < CONFIG.BAG_CAP; i++) {
+            const sx = slotsStartX + i * 34 + 17;
+            const slBg = this.add.graphics().setScrollFactor(0);
+            slBg.fillStyle(0x141c30, 1); slBg.fillRoundedRect(sx - 14, 52, 28, 28, 6);
+            slBg.lineStyle(1.5, 0x252d48, 1); slBg.strokeRoundedRect(sx - 14, 52, 28, 28, 6);
+            this.hudCont.add(slBg);
+            this.cargoSlots.push({ x: sx, y: 66, icon: null });
+          }
+
+          this.cargoLblTxt = this.add.text(W - 12, 85, 'Camión vacía', {
+            fontFamily: 'Nunito', fontSize: '11px', color: '#7888a0'
+          }).setOrigin(1, 0).setScrollFactor(0);
+          this.hudCont.add(this.cargoLblTxt);
+
+        } else {
+          // 💻 DISPOSICIÓN ESCRITORIO (Una fila)
+          const fuelIcon = this.add.text(16, 9, '⛽', { fontSize: '18px' }).setScrollFactor(0);
+          const fBg = this.add.graphics().setScrollFactor(0);
+          fBg.fillStyle(0x1a2436, 1); fBg.fillRoundedRect(46, 12, 150, 16, 6);
+          this.fuelGfx = this.add.graphics().setScrollFactor(0);
+          this.fuelPctTxt = this.add.text(121, 12, '100%', {
+            fontFamily: 'Nunito', fontSize: '11px', fontStyle: 'bold', color: '#fff'
+          }).setOrigin(0.5, 0).setScrollFactor(0);
+          this.hudCont.add([fuelIcon, fBg, this.fuelGfx, this.fuelPctTxt]);
+
+          this.levelTxt = this.add.text(16, 40, 'NIVEL ' + this.level, {
+            fontFamily: 'Nunito', fontSize: '12px', fontStyle: 'bold', color: '#4ecdc4'
+          }).setScrollFactor(0);
+          this.bagCountTxt = this.add.text(80, 46, '', {
+            fontFamily: 'Nunito', fontSize: '11px', color: '#99aabb'
+          }).setScrollFactor(0);
+          this.hudCont.add([this.levelTxt, this.bagCountTxt]);
+
+          this.cargoSlots = [];
+          for (let i = 0; i < CONFIG.BAG_CAP; i++) {
+            const sx = W / 2 - (CONFIG.BAG_CAP * 42) / 2 + i * 42 + 21;
+            const slBg = this.add.graphics().setScrollFactor(0);
+            slBg.fillStyle(0x141c30, 1); slBg.fillRoundedRect(sx - 17, 8, 34, 34, 7);
+            slBg.lineStyle(1.5, 0x252d48, 1); slBg.strokeRoundedRect(sx - 17, 8, 34, 34, 7);
+            this.hudCont.add(slBg);
+            this.cargoSlots.push({ x: sx, y: 25, icon: null });
+          }
+          this.cargoLblTxt = this.add.text(W / 2, 50, 'Camión vacía', {
+            fontFamily: 'Nunito', fontSize: '12px', color: '#7888a0'
+          }).setOrigin(0.5).setScrollFactor(0);
+          this.hudCont.add(this.cargoLblTxt);
+
+          this.scoreTxt = this.add.text(W - 16, 10, '0', {
+            fontFamily: 'Nunito', fontSize: '28px', fontStyle: 'bold', color: '#ffd700'
+          }).setOrigin(1, 0).setScrollFactor(0);
+          const scoreLbl = this.add.text(W - 16, 44, 'PUNTOS', {
+            fontFamily: 'Nunito', fontSize: '11px', color: '#556677'
+          }).setOrigin(1, 0).setScrollFactor(0);
+          this.hudCont.add([this.scoreTxt, scoreLbl]);
         }
-        this.cargoLblTxt = this.add.text(W / 2, 50, 'Bodega vacía', {
-          fontFamily: 'Nunito', fontSize: '12px', color: '#7888a0'
-        }).setOrigin(0.5).setScrollFactor(0);
-
-        // Puntos
-        this.scoreTxt = this.add.text(W - 16, 10, '0', {
-          fontFamily: 'Nunito', fontSize: '28px', fontStyle: 'bold', color: '#ffd700'
-        }).setOrigin(1, 0).setScrollFactor(0);
-        this.add.text(W - 16, 44, 'PUNTOS', {
-          fontFamily: 'Nunito', fontSize: '11px', color: '#556677'
-        }).setOrigin(1, 0).setScrollFactor(0);
 
         this.hudCont.setVisible(false);
       }
 
       refreshFuel() {
         const pct = Math.max(0, this.fuel);
-        const w = 150 * (pct / 100);
+        const W = this.cameras.main.width;
+        const isMobile = W < 600;
+        const maxBarW = isMobile ? 120 : 150;
+        const startX = isMobile ? 42 : 46;
+
+        const w = maxBarW * (pct / 100);
         this.fuelGfx.clear();
         let col = 0x2ecc71;
         if (pct <= 25) col = 0xe74c3c;
         else if (pct <= 50) col = 0xf1c40f;
         this.fuelGfx.fillStyle(col, 1);
-        this.fuelGfx.fillRoundedRect(46, 12, w, 16, 6);
-        // brillo superior
+        this.fuelGfx.fillRoundedRect(startX, 12, w, 16, 6);
         this.fuelGfx.fillStyle(0xffffff, 0.15);
-        this.fuelGfx.fillRoundedRect(46, 12, w, 7, { tl: 6, tr: 6, bl: 0, br: 0 });
+        this.fuelGfx.fillRoundedRect(startX, 12, w, 7, { tl: 6, tr: 6, bl: 0, br: 0 });
         this.fuelPctTxt.setText(Math.round(pct) + '%');
       }
 
       refreshCargo() {
         this.cargoSlots.forEach(s => { if (s.icon) { s.icon.destroy(); s.icon = null; } });
+        const W = this.cameras.main.width;
+        const isMobile = W < 600;
+        const iconSize = isMobile ? 22 : 28;
+
         for (let i = 0; i < this.cargoCount; i++) {
           const s = this.cargoSlots[i];
           const tk = this.cargoType === 'negra' ? 'bolsa_negra'
             : this.cargoType === 'roja' ? 'bolsa_roja'
               : 'bolsa_verde';
           s.icon = this.add.image(s.x, s.y, tk)
-            .setDisplaySize(28, 28).setScrollFactor(0).setDepth(151);
+            .setDisplaySize(iconSize, iconSize).setScrollFactor(0).setDepth(151);
         }
         if (this.cargoCount === 0) {
-          this.cargoLblTxt.setText('Bodega vacía').setColor('#7888a0');
+          this.cargoLblTxt.setText('Camión vacío').setColor('#7888a0');
         } else {
           const nm = { verde: '🟢 Orgánicos', negra: '⚫ Reciclables', roja: '🔴 Sanitarios' };
           const cl = { verde: '#2ecc71', negra: '#aabbcc', roja: '#e74c3c' };
-          this.cargoLblTxt.setText((nm[this.cargoType] || '') + ' · ' + this.cargoCount + '/' + CONFIG.BAG_CAP);
+
+          if (isMobile) {
+            const nmMobile = { verde: '🟢 Org.', negra: '⚫ Recic.', roja: '🔴 Sanit.' };
+            this.cargoLblTxt.setText((nmMobile[this.cargoType] || '') + ' ' + this.cargoCount + '/' + CONFIG.BAG_CAP);
+          } else {
+            this.cargoLblTxt.setText((nm[this.cargoType] || '') + ' · ' + this.cargoCount + '/' + CONFIG.BAG_CAP);
+          }
           this.cargoLblTxt.setColor(cl[this.cargoType] || '#fff');
         }
       }
@@ -902,38 +979,46 @@
         this._menuObjs = [];
         const m = (o) => { this._menuObjs.push(o); return o; };
 
+        const W = this.cameras.main.width;
+        const H = this.cameras.main.height;
+        const cx = W / 2;
+        const cy = H / 2;
+
         const fade = m(this.add.graphics().setScrollFactor(0).setDepth(300));
-        fade.fillStyle(0x0a0f1a, 0.92); fade.fillRect(0, 0, 800, 600);
+        fade.fillStyle(0x0a0f1a, 0.92); fade.fillRect(0, 0, W, H);
+
+        const pW = 408, pH = 472;
+        const px = cx - pW / 2, py = cy - pH / 2;
 
         const panel = m(this.add.graphics().setScrollFactor(0).setDepth(301));
         panel.fillStyle(0x0a1526, 0.98);
-        panel.fillRoundedRect(196, 64, 408, 472, 20);
+        panel.fillRoundedRect(px, py, pW, pH, 20);
         panel.lineStyle(3, 0x4ecdc4, 1);
-        panel.strokeRoundedRect(196, 64, 408, 472, 20);
+        panel.strokeRoundedRect(px, py, pW, pH, 20);
         panel.lineStyle(1, 0x4ecdc4, 0.18);
-        panel.strokeRoundedRect(204, 72, 392, 456, 16);
+        panel.strokeRoundedRect(px + 8, py + 8, pW - 16, pH - 16, 16);
 
-        m(this.add.text(400, 103, '♻️ RECICLADO URRA', {
+        m(this.add.text(cx, py + 39, '♻️ UN RAUCH + LINDO', {
           fontFamily: 'Nunito', fontSize: '29px', fontStyle: 'bold', color: '#4ecdc4'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
 
-        m(this.add.text(400, 138, 'Rauch, Buenos Aires', {
+        m(this.add.text(cx, py + 74, 'Rauch, Buenos Aires', {
           fontFamily: 'Nunito', fontSize: '15px', color: '#5a8090'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
 
         const sep = m(this.add.graphics().setScrollFactor(0).setDepth(302));
-        sep.lineStyle(1, 0x4ecdc4, 0.22); sep.lineBetween(216, 158, 584, 158);
+        sep.lineStyle(1, 0x4ecdc4, 0.22); sep.lineBetween(px + 20, py + 94, px + pW - 20, py + 94);
 
         const lines = [
           '🚛  Manejá el camión sólo por las calles',
           '🟢  Juntá bolsas del mismo tipo de residuo',
           '♻️  Llevá la carga al centro URRA  (↘ esquina)',
-          '🚫  ¡No mezcles colores en la bodega!',
+          '🚫  ¡No mezcles las bolsas en el camión!',
           '⛽  ¡Controlá el combustible!',
           '✅  ¡Juntá todas las bolsas para ganar!'
         ];
         lines.forEach((txt, i) => {
-          m(this.add.text(400, 172 + i * 38, txt, {
+          m(this.add.text(cx, py + 108 + i * 38, txt, {
             fontFamily: 'Nunito', fontSize: '14.5px', color: '#ccdcee'
           }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
         });
@@ -943,19 +1028,19 @@
           btnBg.clear();
           const c = hov ? 0xff8888 : 0xff6b6b;
           btnBg.fillStyle(c, 1);
-          btnBg.fillRoundedRect(298, 402, 204, 54, 14);
+          btnBg.fillRoundedRect(cx - 102, py + 338, 204, 54, 14);
           if (!hov) {
             btnBg.fillStyle(0xffa0a0, 0.3);
-            btnBg.fillRoundedRect(300, 404, 200, 18, { tl: 12, tr: 12, bl: 0, br: 0 });
+            btnBg.fillRoundedRect(cx - 100, py + 340, 200, 18, { tl: 12, tr: 12, bl: 0, br: 0 });
           }
         };
         drawBtn(false);
 
-        m(this.add.text(400, 429, '¡JUGAR!', {
+        m(this.add.text(cx, py + 365, '¡JUGAR!', {
           fontFamily: 'Nunito', fontSize: '26px', fontStyle: 'bold', color: '#fff'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(303));
 
-        const zone = m(this.add.zone(400, 429, 204, 54).setInteractive().setScrollFactor(0).setDepth(303));
+        const zone = m(this.add.zone(cx, py + 365, 204, 54).setInteractive().setScrollFactor(0).setDepth(303));
         zone.on('pointerover', () => drawBtn(true));
         zone.on('pointerout', () => drawBtn(false));
         zone.on('pointerdown', () => {
@@ -964,7 +1049,7 @@
           this.startGameplay();
         });
 
-        m(this.add.text(400, 472, 'Flechas / WASD  •  Táctil: Joystick', {
+        m(this.add.text(cx, py + 408, 'Flechas / WASD  •  Táctil: Joystick', {
           fontFamily: 'Nunito', fontSize: '12.5px', color: '#445566'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
       }
@@ -1058,12 +1143,22 @@
       }
 
       setTruckAngle(dx, dy) {
-        let angle = 0;
-        if (dx === 1) angle = 90;
-        if (dx === -1) angle = 270;
-        if (dy === 1) angle = 180;
-        if (dy === -1) angle = 0;
-        this.tweens.add({ targets: this.truck, angle, duration: 75, ease: 'Linear' });
+        let targetAngle = 0;
+        if (dx === 1) targetAngle = 90;
+        if (dx === -1) targetAngle = -90;
+        if (dy === 1) targetAngle = 180;
+        if (dy === -1) targetAngle = 0;
+
+        // Calcular el camino angular más corto para evitar rotaciones innecesarias de 270 grados
+        const currentAngle = this.truck.angle;
+        const diff = Phaser.Math.Angle.WrapDegrees(targetAngle - currentAngle);
+
+        this.tweens.add({
+          targets: this.truck,
+          angle: currentAngle + diff,
+          duration: 75,
+          ease: 'Linear'
+        });
       }
 
       triggerCrash() {
@@ -1155,7 +1250,7 @@
         const T = CONFIG.TILE;
         const cx = 18 * T + T / 2, cy = 18 * T + T / 2;
         this.floatText(cx, cy - 80, '+' + pts + ' pts', '#ffd700', 30);
-        if (isFullLoad) this.time.delayedCall(200, () => this.floatText(cx, cy - 118, '¡BODEGA COMPLETA! +25', '#e84393', 21));
+        if (isFullLoad) this.time.delayedCall(200, () => this.floatText(cx, cy - 118, 'CAMIÓN COMPLETO! +25', '#e84393', 21));
         if (typeClean) this.time.delayedCall(440, () => this.floatText(cx, cy - 148, '¡TIPO LIMPIO! ♻️ +50', '#2ecc71', 21));
 
         this.cargoCount = 0;
@@ -1308,11 +1403,11 @@
     window.phaserGame = new Phaser.Game({
       type: Phaser.AUTO,
       parent: 'game-container',
-      width: 800,
-      height: 600,
+      width: '100%',
+      height: '100%',
       backgroundColor: '#0a0f1a',
       scale: {
-        mode: Phaser.Scale.FIT,
+        mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH
       },
       physics: {
