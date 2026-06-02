@@ -1,4 +1,26 @@
 {
+  "redirects": [
+    {
+      "source": "/reciclado",
+      "destination": "/reciclado/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/juego",
+      "destination": "/reciclado/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/mapa-rauch",
+      "destination": "/mapa-rauch/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/encuesta",
+      "destination": "/mapa-rauch/index.html",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

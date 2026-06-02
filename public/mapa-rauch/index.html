@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18175127365"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'AW-18175127365');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El cuidado de la Casa Común y la separación de residuos</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #4CAF50;
+            /* Verde Vivo */
+            --primary-dark: #388E3C;
+            /* Verde Vivo Oscuro */
+            --secondary: #FFC107;
+            /* Amarillo / Alerta */
+            --bg-color: #f5f7f9;
+            /* Fondo suave */
+            --bg-panel: #ffffff;
+            /* Blanco */
+            --text-color: #333333;
+            /* Texto principal */
+            --border-color: #e0e0e0;
+            /* Gris Claro Bordes */
+            --border-radius: 8px;
+            /* Rectos pero suaves */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .header-title {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 2px;
+        }
+
+        .header-title span {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        button {
+            background-color: white;
+            color: var(--primary-dark);
+            border: none;
+            padding: 10px 16px;
+            border-radius: var(--border-radius);
+            font-weight: 800;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        button.primary-btn {
+            background-color: var(--primary);
+            color: white;
+            border: 2px solid white;
+        }
+
+        button.primary-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* BANNERS */
+        #firebase-banner,
+        .instruction-banner {
+            text-align: center;
+            padding: 12px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            z-index: 999;
+        }
+
+        #firebase-banner {
+            background-color: var(--secondary);
+            color: #856404;
+            display: none;
+        }
+
+        .instruction-banner {
+            background-color: #2196F3;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* MAP */
+        #map {
+            flex: 1;
+            width: 100%;
+            z-index: 1;
+        }
+
+        /* TOAST NOTIFICATION */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: var(--primary-dark);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 1rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2000;
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* MODALS */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--bg-panel);
+            padding: 32px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-content.large {
+            max-width: 1000px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #888;
+            padding: 4px;
+            line-height: 1;
+            box-shadow: none;
+        }
+
+        .modal-close:hover {
+            color: var(--text-color);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .modal-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 24px;
+            color: var(--primary-dark);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        /* FORMS */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+            color: var(--text-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            background-color: #f9f9f9;
+            color: var(--text-color);
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: white;
+        }
+
+        .form-control[readonly] {
+            background-color: #e9ecef;
+            color: #666;
+            cursor: not-allowed;
+            border-color: #ddd;
+        }
+
+        .checkbox-group,
+        .radio-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            background: #f9f9f9;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            border: 2px solid var(--border-color);
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 32px;
+            border-top: 2px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        /* TOOLTIP LEAFLET */
+        .custom-tooltip {
+            background: var(--bg-panel);
+            border: 2px solid var(--primary);
+            border-radius: var(--border-radius);
+            padding: 12px;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            color: var(--text-color);
+        }
+
+        .custom-tooltip h4 {
+            margin: 0 0 6px 0;
+            color: var(--primary-dark);
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .custom-tooltip p {
+            margin: 4px 0;
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: 500;
+        }
+
+        /* STATS PANEL */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: #f0f7f1;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border: 2px solid var(--primary);
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            font-weight: 800;
+        }
+
+        .stat-card .value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        th,
+        td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* PRINT STYLES */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #map,
+            #map * {
+                visibility: visible;
+            }
+
+            #map {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100vw;
+                height: 100vh;
+            }
+
+            .leaflet-control-container {
+                display: none;
+            }
+
+            body::before {
+                content: "Mapa de Relevamiento de Residuos - Rauch | Colegio Inmaculada Concepción";
+                visibility: visible;
+                position: absolute;
+                top: 20px;
+                left: 50px;
+                font-size: 20px;
+                font-weight: bold;
+                z-index: 9999;
+                background: white;
+                padding: 10px 15px;
+                border: 2px solid black;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="header-title">
+            <h1>“Un Rauch más lindo”</h1>
+            <span>Colegio Inmaculada Concepción — Proyecto de Reciclado Sustentable</span>
+        </div>
+        <div class="header-buttons">
+            <span id="connection-status" title="Conexión a base de datos">🔴</span>
+            <button onclick="window.open('reciclaje-rauch.html', '_blank')" class="primary-btn">🎮 Jugar Reciclaje Rauch</button>
+            <button onclick="openStatsModal()">📊 Estadísticas</button>
+            <button onclick="openTeacherModal()">🖨️ Panel Maestra</button>
+        </div>
+    </header>
+
+    <!-- Warnings & Instructions -->
+    <div id="firebase-banner">⚠️ Configurá Firebase en el código para guardar datos en la nube. Actualmente funcionando
+        en modo local (sin guardar).</div>
+    <div class="instruction-banner">👇 Hacé clic en tu barrio para registrar lo que observaste</div>
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Toast Notification -->
+    <div id="toast">✅ Relevamiento guardado con éxito.</div>
+
+    <!-- Form Modal -->
+    <div class="modal-overlay" id="form-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('form-modal')">&times;</button>
+            <h2 class="modal-title">📋 Nuevo Relevamiento</h2>
+            <form id="relevamiento-form" onsubmit="handleFormSubmit(event)">
+                <input type="hidden" id="sector-id">
+
+                <div class="form-group">
+                    <label>Barrio / Sector</label>
+                    <input type="text" id="sector-nombre" class="form-control" readonly>
+                </div>
+
+                <div style="display: flex; gap: 16px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Docente a cargo</label>
+                        <input type="text" class="form-control" value="Luz FACCIO" readonly>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Fecha y Hora</label>
+                        <input type="datetime-local" id="fecha-hora" class="form-control" required>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px;">
+                    <div class="form-group" style="flex: 2;">
+                        <label>Tu Nombre y Apellido</label>
+                        <input type="text" id="alumno-nombre" class="form-control" placeholder="Ej: Juan Pérez"
+                            required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Grado Escolar</label>
+                        <select id="alumno-grado" class="form-control" required>
+                            <option value="">Elegir...</option>
+                            <option value="1°">1° grado</option>
+                            <option value="2°">2° grado</option>
+                            <option value="3°">3° grado</option>
+                            <option value="4°">4° grado</option>
+                            <option value="5°">5° grado</option>
+                            <option value="6°">6° grado</option>
+                            <option value="7°">7° grado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>¿Qué tipo de basura viste más? (Podés marcar varias):</label>
+                    <div class="checkbox-group">
+                        <label class="check-item"><input type="checkbox" name="residuo" value="Plástico"> ♻️
+                            Plástico</label>
+                        <label class="check-item"><input type="checkbox" name="residuo" value="Vidrio"> 🍶
+                            Vidrio</label>
+                        <label class="check-item"><input type="checkbox" name="residuo" value="Papel/Cartón"> 📦
+                            Papel/Cartón</label>
+                        <label class="check-item"><input type="checkbox" name="residuo" value="Orgánico"> 🍃
+                            Orgánico</label>
+                        <label class="check-item"><input type="checkbox" name="residuo" value="Electrónicos"> 💡
+                            Electrónicos</label>
+                        <label class="check-item"><input type="checkbox" name="residuo" value="Metales"> 🔩
+                            Metales</label>
+                        <label class="check-item"><input type="checkbox" name="residuo" value="Mixto"> 🗑️ Mixto</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Cantidad estimada de basura visible</label>
+                    <select id="cantidad-basura" class="form-control" required>
+                        <option value="">Elegir...</option>
+                        <option value="Muy poca">Muy poca 😊</option>
+                        <option value="Poca">Poca 🙂</option>
+                        <option value="Moderada">Moderada 😐</option>
+                        <option value="Mucha">Mucha 😟</option>
+                        <option value="Excesiva">Excesiva 😱</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>¿Cada cuánto pasa el camión recolector? (Si sabés)</label>
+                    <select id="frecuencia" class="form-control" required>
+                        <option value="">Elegir...</option>
+                        <option value="Diaria">Todos los días</option>
+                        <option value="Cada 2-3 días">Cada 2-3 días</option>
+                        <option value="Semanal">Una vez por semana</option>
+                        <option value="Irregular">A veces pasa, a veces no</option>
+                        <option value="No observada">No sé / No presté atención</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 16px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>¿Hay contenedores acá?</label>
+                        <div class="radio-group">
+                            <label class="check-item"><input type="radio" name="contenedores" value="Sí" required>
+                                Sí</label>
+                            <label class="check-item"><input type="radio" name="contenedores" value="No"> No</label>
+                            <label class="check-item"><input type="radio" name="contenedores" value="Parcialmente">
+                                Parcial</label>
+                        </div>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>¿Basura fuera del tacho?</label>
+                        <div class="radio-group">
+                            <label class="check-item"><input type="radio" name="basura-fuera" value="Sí" required>
+                                Sí</label>
+                            <label class="check-item"><input type="radio" name="basura-fuera" value="No"> No</label>
+                            <label class="check-item"><input type="radio" name="basura-fuera" value="A veces"> A
+                                veces</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Observaciones adicionales</label>
+                    <textarea id="observaciones" class="form-control" rows="3" maxlength="300"
+                        placeholder="Ej: Hay botellas tiradas en la zanja..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('form-modal')">Cancelar</button>
+                    <button type="submit" class="primary-btn">💾 Guardar Relevamiento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div class="modal-overlay" id="stats-modal">
+        <div class="modal-content large">
+            <button class="modal-close" onclick="closeModal('stats-modal')">&times;</button>
+            <h2 class="modal-title">📊 Estadísticas del Proyecto</h2>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total de Relevamientos</h3>
+                    <div class="value" id="stat-total">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Sector más activo</h3>
+                    <div class="value" id="stat-top-sector" style="font-size: 1.25rem; line-height: 2.5rem;">N/A</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Residuo Predominante</h3>
+                    <div class="value" id="stat-top-residuo" style="font-size: 1.25rem; line-height: 2.5rem;">N/A</div>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div>
+                    <canvas id="barChart"></canvas>
+                </div>
+                <div>
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+
+            <h3>Resumen por Sector</h3>
+            <div class="table-container">
+                <table id="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Sector</th>
+                            <th>Relevamientos</th>
+                            <th>Alertas de Basura</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Llenado dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher Modal -->
+    <div class="modal-overlay" id="teacher-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('teacher-modal')">&times;</button>
+            <h2 class="modal-title">🖨️ Panel Maestra (Reportes)</h2>
+            <p style="margin-bottom: 24px; color: #555; font-size: 1rem;">Seleccione el reporte que desea generar e
+                imprimir para la clase.</p>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <button class="primary-btn" onclick="printMap()"
+                    style="justify-content: center; padding: 16px; font-size: 1.1rem;">
+                    🗺️ Imprimir Mapa Actual con Sectores (A4)
+                </button>
+                <button onclick="printData()"
+                    style="justify-content: center; padding: 16px; font-size: 1.1rem; border: 2px solid #2196F3; color: #2196F3;">
+                    📋 Imprimir Tabla de Relevamientos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        let db = null;
+        let isFirebaseConfigured = false;
+        let todosLosRelevamientos = [];
+
+        if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                isFirebaseConfigured = true;
+                document.getElementById('connection-status').innerText = '🟢';
+                document.getElementById('connection-status').title = 'Conectado a Firebase';
+            } catch (e) {
+                console.error("Error inicializando Firebase:", e);
+            }
+        } else {
+            document.getElementById('firebase-banner').style.display = 'block';
+        }
+
+        /* 2. DATOS DE SECTORES (GRILLA 20 ZONAS) Y COLORES BASE */
+        const gridLng = -59.0985;
+        const gridLat = -36.7727;
+        const step = 0.008;
+
+        // Paleta de colores vivos y variados para cada sector vacío
+        const baseColors = [
+            '#FF5722', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
+            '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50',
+            '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800',
+            '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5'
+        ];
+
+        function makeRect(id, name, latOff, lngOff, index) {
+            const lat1 = gridLat + latOff * step;
+            const lat2 = gridLat + (latOff + 1) * step;
+            const lng1 = gridLng + lngOff * step;
+            const lng2 = gridLng + (lngOff + 1) * step;
+            return {
+                "type": "Feature",
+                "properties": { "id": id, "name": name, "count": 0, "lastData": null, "baseColor": baseColors[index] },
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[lng1, lat1], [lng2, lat1], [lng2, lat2], [lng1, lat2], [lng1, lat1]]]
+                }
+            };
+        }
+
+        // 20 Zonas
+        const SECTORES_RAUCH = {
+            "type": "FeatureCollection",
+            "features": [
+                // Fila 1 (Norte)
+                makeRect("noroeste", "Barrio Noroeste", 1, -1, 0),
+                makeRect("norte", "Barrio Norte", 1, 0, 1),
+                makeRect("noreste-1", "Barrio Noreste", 1, 1, 2),
+                makeRect("noreste-2", "Noreste Periférico", 1, 2, 3),
+                makeRect("noreste-3", "Noreste Extremo", 1, 3, 4),
+
+                // Fila 2 (Centro)
+                makeRect("oeste", "Barrio Oeste", 0, -1, 5),
+                makeRect("centro", "Centro Histórico", 0, 0, 6),
+                makeRect("este-1", "Barrio Este", 0, 1, 7),
+                makeRect("este-2", "Extensión Este", 0, 2, 8),
+                makeRect("este-3", "Zona Rural Este", 0, 3, 9),
+
+                // Fila 3 (Sur)
+                makeRect("suroeste", "Barrio Suroeste", -1, -1, 10),
+                makeRect("sur", "Barrio Sur", -1, 0, 11),
+                makeRect("sureste-1", "Barrio Sureste", -1, 1, 12),
+                makeRect("sureste-2", "Sureste Periférico", -1, 2, 13),
+                makeRect("sureste-3", "Sureste Extremo", -1, 3, 14),
+
+                // Fila 4 (Sur Extremo)
+                makeRect("suroeste-ext", "Suroeste Rural", -2, -1, 15),
+                makeRect("sur-ext", "Área Periurbana Sur", -2, 0, 16),
+                makeRect("sureste-ext-1", "Zona Industrial Sureste", -2, 1, 17),
+                makeRect("sureste-ext-2", "Acceso Sureste", -2, 2, 18),
+                makeRect("sureste-ext-3", "Camino Sureste", -2, 3, 19)
+            ]
+        };
+
+        /* 3. LEAFLET MAP */
+        const map = L.map('map').setView([gridLat, gridLng], 14);
+
+        // Volvemos al mapa vivo estándar de OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        let geojsonLayer;
+
+        function styleFeature(feature) {
+            const count = feature.properties.count;
+            const baseColor = feature.properties.baseColor;
+
+            // Si no tiene datos: Usa su color base pero muy transparente
+            // Si tiene datos: Mantiene su color base pero se vuelve opaco y vibrante
+            let fillOpacity = 0.2; // Vacío
+            let weight = 2;
+            let color = '#ffffff';
+
+            if (count > 0) {
+                fillOpacity = 0.6; // Con datos (vivo)
+                color = '#000000'; // Borde oscuro para resaltar
+            }
+            if (count > 2) {
+                fillOpacity = 0.8; // Muy activo
+            }
+            if (count > 5) {
+                fillOpacity = 1.0; // Súper activo
+            }
+
+            return {
+                fillColor: baseColor,
+                weight: count > 0 ? 3 : 2,
+                opacity: 1,
+                color: color,
+                dashArray: count === 0 ? '4' : '',
+                fillOpacity: fillOpacity
+            };
+        }
+
+        function onEachFeature(feature, layer) {
+            layer.on({
+                mouseover: function (e) {
+                    const l = e.target;
+                    l.setStyle({ weight: 4, color: '#FFC107', dashArray: '' });
+                    l.bringToFront();
+
+                    const p = feature.properties;
+                    let tooltipContent = `<div class="custom-tooltip"><h4>${p.name}</h4>`;
+
+                    if (p.count === 0) {
+                        tooltipContent += `<p style="color: #666;">Sin relevamientos. ¡Sé el primero!</p>`;
+                    } else {
+                        tooltipContent += `<p><b>✅ Registros:</b> ${p.count}</p>`;
+                        if (p.lastData) {
+                            tooltipContent += `<p style="font-size:0.85rem; margin-top:6px; color:#555;">Último: ${p.lastData.alumno}</p>`;
+                        }
+                    }
+                    tooltipContent += `</div>`;
+
+                    l.bindTooltip(tooltipContent, { direction: 'top', className: 'leaflet-tooltip-own' }).openTooltip();
+                },
+                mouseout: function (e) {
+                    geojsonLayer.resetStyle(e.target);
+                    e.target.closeTooltip();
+                },
+                click: function (e) {
+                    openFormModal(feature.properties.id, feature.properties.name);
+                }
+            });
+        }
+
+        function renderMap() {
+            if (geojsonLayer) map.removeLayer(geojsonLayer);
+            geojsonLayer = L.geoJSON(SECTORES_RAUCH, {
+                style: styleFeature,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+        }
+
+        renderMap();
+
+        /* 4. UI MODALS */
+        window.openModal = function (id) { document.getElementById(id).classList.add('active'); }
+        window.closeModal = function (id) { document.getElementById(id).classList.remove('active'); }
+
+        window.openFormModal = function (sectorId, sectorName) {
+            document.getElementById('relevamiento-form').reset();
+            document.getElementById('sector-id').value = sectorId;
+            document.getElementById('sector-nombre').value = sectorName;
+
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('fecha-hora').value = now.toISOString().slice(0, 16);
+
+            openModal('form-modal');
+        }
+
+        window.openStatsModal = function () {
+            updateCharts();
+            openModal('stats-modal');
+        }
+
+        window.openTeacherModal = function () { openModal('teacher-modal'); }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        /* 5. FORM SUBMIT */
+        window.handleFormSubmit = async function (e) {
+            e.preventDefault();
+
+            const residuosChecked = Array.from(document.querySelectorAll('input[name="residuo"]:checked')).map(cb => cb.value);
+
+            const data = {
+                sectorId: document.getElementById('sector-id').value,
+                sectorNombre: document.getElementById('sector-nombre').value,
+                fecha: document.getElementById('fecha-hora').value,
+                alumno: document.getElementById('alumno-nombre').value,
+                grado: document.getElementById('alumno-grado').value,
+                tiposResiduos: residuosChecked,
+                cantidadBasura: document.getElementById('cantidad-basura').value,
+                frecuenciaRecoleccion: document.getElementById('frecuencia').value,
+                contenedores: document.querySelector('input[name="contenedores"]:checked').value,
+                basuraFuera: document.querySelector('input[name="basura-fuera"]:checked').value,
+                observaciones: document.getElementById('observaciones').value
+            };
+
+            if (isFirebaseConfigured) {
+                try {
+                    data.creadoEn = serverTimestamp();
+                    await addDoc(collection(db, "relevamientos"), data);
+                    closeModal('form-modal');
+                    showToast();
+                } catch (error) {
+                    alert("Error al guardar: " + error.message);
+                }
+            } else {
+                data.creadoEn = new Date();
+                todosLosRelevamientos.push(data);
+                processRelevamientos(todosLosRelevamientos);
+                closeModal('form-modal');
+                showToast();
+            }
+        }
+
+        /* 6. SYNC FIRESTORE */
+        if (isFirebaseConfigured) {
+            onSnapshot(collection(db, "relevamientos"), (snapshot) => {
+                const registros = [];
+                snapshot.forEach((doc) => registros.push(doc.data()));
+                todosLosRelevamientos = registros;
+                processRelevamientos(registros);
+            });
+        }
+
+        function processRelevamientos(registros) {
+            SECTORES_RAUCH.features.forEach(f => {
+                f.properties.count = 0;
+                f.properties.lastData = null;
+            });
+
+            registros.forEach(reg => {
+                const feature = SECTORES_RAUCH.features.find(f => f.properties.id === reg.sectorId);
+                if (feature) {
+                    feature.properties.count++;
+                    if (!feature.properties.lastData || new Date(reg.fecha) > new Date(feature.properties.lastData.fechaRaw)) {
+                        feature.properties.lastData = {
+                            alumno: reg.alumno,
+                            fechaRaw: reg.fecha,
+                            fechaFormat: new Date(reg.fecha).toLocaleDateString('es-AR')
+                        };
+                    }
+                }
+            });
+            renderMap();
+        }
+
+        /* 7. CHARTS */
+        let barChartInst = null;
+        let pieChartInst = null;
+
+        function updateCharts() {
+            const total = todosLosRelevamientos.length;
+            document.getElementById('stat-total').innerText = total;
+
+            if (total === 0) return;
+
+            const sectorCounts = {};
+            const residuoCounts = {};
+            const basuraFueraSector = {};
+
+            todosLosRelevamientos.forEach(r => {
+                sectorCounts[r.sectorNombre] = (sectorCounts[r.sectorNombre] || 0) + 1;
+                r.tiposResiduos.forEach(res => residuoCounts[res] = (residuoCounts[res] || 0) + 1);
+                if (r.basuraFuera === 'Sí' || r.basuraFuera === 'A veces') {
+                    basuraFueraSector[r.sectorNombre] = (basuraFueraSector[r.sectorNombre] || 0) + 1;
+                }
+            });
+
+            const topSector = Object.keys(sectorCounts).reduce((a, b) => sectorCounts[a] > sectorCounts[b] ? a : b);
+            document.getElementById('stat-top-sector').innerText = topSector;
+
+            const topResiduo = Object.keys(residuoCounts).reduce((a, b) => residuoCounts[a] > residuoCounts[b] ? a : b);
+            document.getElementById('stat-top-residuo').innerText = topResiduo;
+
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            if (barChartInst) barChartInst.destroy();
+            barChartInst = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(sectorCounts),
+                    datasets: [{
+                        label: 'Relevamientos por Sector',
+                        data: Object.values(sectorCounts),
+                        backgroundColor: '#4CAF50'
+                    }]
+                },
+                options: { indexAxis: 'y', responsive: true }
+            });
+
+            const ctxPie = document.getElementById('pieChart').getContext('2d');
+            if (pieChartInst) pieChartInst.destroy();
+            pieChartInst = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(residuoCounts),
+                    datasets: [{
+                        data: Object.values(residuoCounts),
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4CAF50', '#9966FF', '#FF9F40', '#C9CBCF']
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'right' } } }
+            });
+
+            const tbody = document.querySelector('#stats-table tbody');
+            tbody.innerHTML = '';
+            Object.keys(sectorCounts).forEach(sec => {
+                const tr = document.createElement('tr');
+                const problemas = basuraFueraSector[sec] || 0;
+                tr.innerHTML = `
+                    <td>${sec}</td>
+                    <td>${sectorCounts[sec]}</td>
+                    <td><span style="color:${problemas > 0 ? '#d32f2f' : '#2e7d32'}; font-weight:600;">${problemas} alertas</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        /* 8. PRINTING */
+        window.printMap = function () {
+            closeModal('teacher-modal');
+            setTimeout(() => { map.invalidateSize(); window.print(); }, 500);
+        }
+
+        window.printData = function () {
+            closeModal('teacher-modal');
+            let html = `
+                <html><head><title>Reporte - Rauch</title>
+                <style>
+                    body { font-family: 'Inter', Arial, sans-serif; padding: 30px; color: #333; }
+                    h1 { color: #1b5e20; text-align: center; margin-bottom: 5px; }
+                    .header-info { text-align: center; margin-bottom: 30px; color: #666; font-size: 14px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+                    th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
+                    th { background-color: #f5f5f5; color: #333; }
+                    @media print { thead { display: table-header-group; } }
+                </style>
+                </head><body>
+                <h1>Proyecto de Reciclado Sustentable</h1>
+                <div class="header-info">
+                    <p>Colegio Inmaculada Concepción, Rauch — Docente: Luz Faccio</p>
+                    <p>Total Registros: ${todosLosRelevamientos.length} | Fecha: ${new Date().toLocaleDateString('es-AR')}</p>
+                </div>
+                <table><thead><tr>
+                    <th>Fecha</th><th>Sector</th><th>Alumno</th><th>Grado</th><th>Residuos</th><th>Cantidad</th><th>Contenedores</th><th>Observaciones</th>
+                </tr></thead><tbody>
+            `;
+
+            const ordenados = [...todosLosRelevamientos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            ordenados.forEach(r => {
+                html += `<tr>
+                    <td>${new Date(r.fecha).toLocaleString('es-AR')}</td>
+                    <td><strong>${r.sectorNombre}</strong></td>
+                    <td>${r.alumno}</td>
+                    <td>${r.grado}</td>
+                    <td>${r.tiposResiduos.join(', ')}</td>
+                    <td>${r.cantidadBasura}</td>
+                    <td>${r.contenedores}</td>
+                    <td>${r.observaciones || ''}</td>
+                </tr>`;
+            });
+            html += `</tbody></table></body></html>`;
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
+            setTimeout(() => printWindow.print(), 500);
+        }
+    </script>
+</body>
+
+</html>
