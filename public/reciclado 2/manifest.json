@@ -1,0 +1,21 @@
+{
+  "name": "Rauch Recicla",
+  "short_name": "RauchRecicla",
+  "description": "Juego del camión de reciclaje de Rauch",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0f1a",
+  "theme_color": "#4ecdc4",
+  "icons": [
+    {
+      "src": "assets/camion.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/camion.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

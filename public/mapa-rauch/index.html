@@ -125,7 +125,7 @@
         }
 
         /* BANNERS */
-        #firebase-banner,
+        #sheets-banner,
         .instruction-banner {
             text-align: center;
             padding: 12px;
@@ -134,7 +134,7 @@
             z-index: 999;
         }
 
-        #firebase-banner {
+        #sheets-banner {
             background-color: var(--secondary);
             color: #856404;
             display: none;
@@ -453,7 +453,7 @@
     <!-- Header -->
     <header>
         <div class="header-title">
-            <h1>“Un Rauch más lindo”</h1>
+            <h1>“Un Rauch + lindo”</h1>
             <span>Colegio Inmaculada Concepción — Proyecto de Reciclado Sustentable</span>
         </div>
         <div class="header-buttons">
@@ -466,8 +466,8 @@
     </header>
 
     <!-- Warnings & Instructions -->
-    <div id="firebase-banner">⚠️ Configurá Firebase en el código para guardar datos en la nube. Actualmente funcionando
-        en modo local (sin guardar).</div>
+    <div id="sheets-banner">⚠️ Configurá la URL de tu Google Sheets en el código para guardar datos en la nube.
+        Actualmente funcionando en modo local (sin guardar).</div>
     <div class="instruction-banner">👇 Hacé clic en tu barrio para registrar lo que observaste</div>
 
     <!-- Map Container -->
@@ -675,34 +675,43 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // URL de tu Apps Script publicada como Aplicación Web (reemplazar con tu URL de tipo https://script.google.com/macros/s/.../exec)
+        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwAJskr4hMNBNb8KvzFInQ8HY6nncKbCq3OIl8PKvt8BN0iUurjwyBv6W3iHT_1l4T1qQ/exec";
 
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        let db = null;
-        let isFirebaseConfigured = false;
+        const isSheetsConfigured = GOOGLE_SHEETS_URL !== "" && !GOOGLE_SHEETS_URL.includes("YOUR_") && GOOGLE_SHEETS_URL.startsWith("https://");
         let todosLosRelevamientos = [];
 
-        if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                isFirebaseConfigured = true;
-                document.getElementById('connection-status').innerText = '🟢';
-                document.getElementById('connection-status').title = 'Conectado a Firebase';
-            } catch (e) {
-                console.error("Error inicializando Firebase:", e);
-            }
+        // Cambiar estado visual de la conexión
+        if (isSheetsConfigured) {
+            document.getElementById('connection-status').innerText = '⏳';
+            document.getElementById('connection-status').title = 'Conectando a Google Sheets...';
+            document.getElementById('sheets-banner').style.display = 'none';
         } else {
-            document.getElementById('firebase-banner').style.display = 'block';
+            document.getElementById('connection-status').innerText = '🔴';
+            document.getElementById('connection-status').title = 'Google Sheets no configurado';
+            document.getElementById('sheets-banner').style.display = 'block';
+        }
+
+        async function cargarDatosDesdeSheets() {
+            if (!isSheetsConfigured) return;
+            try {
+                const response = await fetch(GOOGLE_SHEETS_URL);
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    todosLosRelevamientos = data;
+                    processRelevamientos(todosLosRelevamientos);
+                    document.getElementById('connection-status').innerText = '🟢';
+                    document.getElementById('connection-status').title = 'Conectado a Google Sheets';
+                } else {
+                    console.error("Respuesta no válida del Apps Script:", data);
+                    document.getElementById('connection-status').innerText = '🟡';
+                    document.getElementById('connection-status').title = 'Error en formato de datos de Sheets';
+                }
+            } catch (error) {
+                console.error("Error al cargar datos desde Google Sheets:", error);
+                document.getElementById('connection-status').innerText = '🔴';
+                document.getElementById('connection-status').title = 'Error de conexión a Google Sheets';
+            }
         }
 
         /* 2. DATOS DE SECTORES (GRILLA 20 ZONAS) Y COLORES BASE */
@@ -851,6 +860,10 @@
 
         renderMap();
 
+        if (isSheetsConfigured) {
+            cargarDatosDesdeSheets();
+        }
+
         /* 4. UI MODALS */
         window.openModal = function (id) { document.getElementById(id).classList.add('active'); }
         window.closeModal = function (id) { document.getElementById(id).classList.remove('active'); }
@@ -900,14 +913,44 @@
                 observaciones: document.getElementById('observaciones').value
             };
 
-            if (isFirebaseConfigured) {
+            if (isSheetsConfigured) {
                 try {
-                    data.creadoEn = serverTimestamp();
-                    await addDoc(collection(db, "relevamientos"), data);
+                    const submitBtn = e.target.querySelector('button[type="submit"]');
+                    const originalBtnText = submitBtn.innerText;
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = "Guardando...";
+
+                    // Guardamos en Google Sheets (Apps Script recibirá el body como JSON texto plano)
+                    await fetch(GOOGLE_SHEETS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(data),
+                        headers: {
+                            'Content-Type': 'text/plain'
+                        }
+                    });
+
+                    // Agregamos localmente para feedback inmediato
+                    data.creadoEn = new Date();
+                    todosLosRelevamientos.push(data);
+                    processRelevamientos(todosLosRelevamientos);
+
                     closeModal('form-modal');
                     showToast();
+
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = originalBtnText;
+
+                    // Recargamos el estado oficial desde la planilla
+                    await cargarDatosDesdeSheets();
                 } catch (error) {
-                    alert("Error al guardar: " + error.message);
+                    console.error("Error al guardar en Sheets:", error);
+                    alert("Se guardó localmente por un problema de conexión con Sheets.");
+
+                    data.creadoEn = new Date();
+                    todosLosRelevamientos.push(data);
+                    processRelevamientos(todosLosRelevamientos);
+                    closeModal('form-modal');
+                    showToast();
                 }
             } else {
                 data.creadoEn = new Date();
@@ -918,15 +961,8 @@
             }
         }
 
-        /* 6. SYNC FIRESTORE */
-        if (isFirebaseConfigured) {
-            onSnapshot(collection(db, "relevamientos"), (snapshot) => {
-                const registros = [];
-                snapshot.forEach((doc) => registros.push(doc.data()));
-                todosLosRelevamientos = registros;
-                processRelevamientos(registros);
-            });
-        }
+        /* 6. SYNC DATA */
+        // Sincronización realizada mediante cargarDatosDesdeSheets() al inicio y después de guardar.
 
         function processRelevamientos(registros) {
             SECTORES_RAUCH.features.forEach(f => {

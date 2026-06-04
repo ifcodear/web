@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>UN RAUCH + LINDO </title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0a0f1a;
+      font-family: 'Nunito', sans-serif;
+    }
+
+    #game-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #overlay-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    #overlay-container.active {
+      pointer-events: all;
+    }
+
+    .overlay-panel {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(8, 14, 28, 0.97);
+      border-radius: 24px;
+      padding: 28px;
+      color: #fff;
+      text-align: center;
+      border: 3px solid #4ecdc4;
+      box-shadow: 0 0 70px rgba(78, 205, 196, 0.45);
+      max-width: 460px;
+      width: 92%;
+    }
+
+    .overlay-panel.visible {
+      display: block;
+    }
+
+    .overlay-panel h2 {
+      font-size: 27px;
+      margin-bottom: 10px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .overlay-panel p {
+      font-size: 17px;
+      margin: 8px 0;
+      color: #b0b8cc;
+    }
+
+    .overlay-panel input[type="text"] {
+      width: 85%;
+      padding: 11px 16px;
+      font-size: 17px;
+      border-radius: 12px;
+      border: 2px solid #4ecdc4;
+      background: #141c30;
+      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      outline: none;
+      margin: 12px 0;
+      text-align: center;
+    }
+
+    .overlay-panel input[type="text"]::placeholder {
+      color: #445566;
+    }
+
+    .overlay-panel button {
+      padding: 11px 22px;
+      font-size: 16px;
+      font-weight: 800;
+      border: none;
+      border-radius: 13px;
+      cursor: pointer;
+      margin: 5px;
+      font-family: 'Nunito', sans-serif;
+      transition: transform .15s, box-shadow .15s;
+    }
+
+    .overlay-panel button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-save {
+      background: linear-gradient(135deg, #4ecdc4, #3ba69c);
+      color: #fff;
+    }
+
+    .btn-play {
+      background: linear-gradient(135deg, #ff6b6b, #e63946);
+      color: #fff;
+    }
+
+    .btn-play2 {
+      background: linear-gradient(135deg, #6c5ce7, #8e2de2);
+      color: #fff;
+    }
+
+    #leaderboard-table,
+    #vic-lb-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    #leaderboard-table th,
+    #vic-lb-table th {
+      background: #4ecdc4;
+      color: #080e1c;
+      padding: 7px;
+      font-weight: 800;
+    }
+
+    #leaderboard-table td,
+    #vic-lb-table td {
+      padding: 5px 4px;
+      border-bottom: 1px solid #1e2a40;
+    }
+
+    #leaderboard-table tr:nth-child(even),
+    #vic-lb-table tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.03);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="game-container"></div>
+  <div id="overlay-container">
+    <div id="gameover-panel" class="overlay-panel">
+      <h2 id="go-reason" style="color:#ff6b6b;">¡Fin del juego!</h2>
+      <p>Puntaje: <span id="go-score" style="color:#ffd700;font-weight:900;font-size:30px;">0</span></p>
+      <input type="text" id="go-name" placeholder="Escribí tu nombre" maxlength="15" />
+      <div><button class="btn-save" id="go-save">💾 Guardar y ver ranking</button></div>
+      <div id="go-leaderboard" style="display:none;margin-top:10px;max-height:170px;overflow-y:auto;">
+        <h3 style="color:#4ecdc4;font-size:14px;">🏆 TOP 10 RAUCH</h3>
+        <table id="leaderboard-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Pts</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;"><button class="btn-play" id="go-retry">🔄 Jugar de nuevo</button></div>
+    </div>
+    <div id="victory-panel" class="overlay-panel">
+      <h2 style="color:#ffd700;">¡RAUCH ESTÁ LIMPIA! 🎉</h2>
+      <p style="font-size:15px;color:#aaffaa;font-weight:bold;">¡Reciclaste toda la basura de la ciudad!</p>
+      <p>Puntaje: <span id="vic-score" style="color:#ffd700;font-weight:900;font-size:30px;">0</span></p>
+      <input type="text" id="vic-name" placeholder="Escribí tu nombre" maxlength="15" />
+      <div><button class="btn-save" id="vic-save">💾 Guardar y ver ranking</button></div>
+      <div id="vic-leaderboard" style="display:none;margin-top:10px;max-height:170px;overflow-y:auto;">
+        <h3 style="color:#4ecdc4;font-size:14px;">🏆 TOP 10 RAUCH</h3>
+        <table id="vic-lb-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Pts</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;"><button class="btn-play2" id="vic-retry">🔄 Jugar de nuevo</button></div>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════
+    // CONFIGURACIÓN
+    // ═══════════════════════════════════════════════════════════
+    const CONFIG = {
+      jsonbinBinId: 'TU_BIN_ID_AQUI',
+      jsonbinApiKey: 'TU_API_KEY_AQUI',
+      jsonbinUrl: function () { return 'https://api.jsonbin.io/v3/b/' + this.jsonbinBinId; },
+      TILE: 64,
+      MAP_COLS: 20,
+      MAP_ROWS: 20,
+      MOVE_SPEED: 5.0,
+      FUEL_FULL: 100,
+      FUEL_RATE: 4.5,
+      FUEL_WARN: 25,
+      BAG_CAP: 5,
+      BAGS_L1: 6,
+      BAGS_L2: 8,
+      OBS_MIN_L1: 7, OBS_MAX_L1: 11,
+      OBS_MIN_L2: 13, OBS_MAX_L2: 17
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // MAPA 20×20 damero de Rauch
+    // ═══════════════════════════════════════════════════════════
+    function buildMapData() {
+      const C = CONFIG.MAP_COLS, R = CONFIG.MAP_ROWS;
+      const map = [];
+      for (let r = 0; r < R; r++) {
+        const row = [];
+        for (let c = 0; c < C; c++) {
+          if (r === 0 || r === R - 1 || c === 0 || c === C - 1) { row.push(1); continue; }
+          if (r % 3 === 0 || c % 3 === 0) { row.push(1); continue; }
+          if (c >= 9 && c <= 11 && r >= 9 && r <= 11) { row.push(2); continue; } // plaza
+          if (c >= 17 && c <= 19 && r >= 17 && r <= 19) { row.push(3); continue; } // URRA
+          row.push(0); // manzana
+        }
+        map.push(row);
+      }
+      return map;
+    }
+    const MAP_DATA = buildMapData();
+
+    // Fallbacks procedurales para si falla la carga de un asset
+    function makeFallback(scene, key, w, h, color) {
+      const g = scene.make.graphics({ add: false });
+      g.fillStyle(color, 1);
+      g.fillRoundedRect(2, 2, w - 4, h - 4, 6);
+      g.lineStyle(2, 0x000000, 0.5);
+      g.strokeRoundedRect(2, 2, w - 4, h - 4, 6);
+      g.generateTexture(key, w, h);
+      g.destroy();
+    }
+
+    // Textura de calle procedural mejorada (fallback si calle.png falla)
+    function makeStreetTexture(scene) {
+      const T = CONFIG.TILE;
+      const g = scene.make.graphics({ add: false });
+      // Asfalto oscuro
+      g.fillStyle(0x3d4450, 1); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x444d5a, 1); g.fillRect(1, 1, T - 2, T - 2);
+      // Líneas viales amarillas discontinuas
+      g.fillStyle(0xddbb22, 0.5);
+      g.fillRect(T / 2 - 2, 2, 4, T * 0.3);
+      g.fillRect(T / 2 - 2, T * 0.55, 4, T * 0.3);
+      g.fillRect(2, T / 2 - 2, T * 0.3, 4);
+      g.fillRect(T * 0.55, T / 2 - 2, T * 0.3, 4);
+      // Bordes de acera sutiles
+      g.lineStyle(1, 0x555e6a, 0.6);
+      g.strokeRect(0, 0, T, T);
+      g.generateTexture('calle_fb', T, T);
+      g.destroy();
+    }
+
+    // Textura de manzana / césped
+    function makeGrassTexture(scene) {
+      const T = CONFIG.TILE;
+      const g = scene.make.graphics({ add: false });
+      g.fillStyle(0x236b36, 1); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x1e5e2e, 1); g.fillRect(1, 1, T - 2, T - 2);
+      // Textura de hierba sutil
+      g.fillStyle(0x2a7a3e, 0.35);
+      for (let i = 0; i < 8; i++) {
+        const rx = (i * 17) % (T - 4) + 2;
+        const ry = (i * 23) % (T - 4) + 2;
+        g.fillCircle(rx, ry, 4);
+      }
+      g.generateTexture('tile_manzana', T, T);
+      g.destroy();
+    }
+
+    // Textura plaza
+    function makePlazaTexture(scene) {
+      const T = CONFIG.TILE;
+      const g = scene.make.graphics({ add: false });
+      g.fillStyle(0x2e8c4e, 1); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x27a348, 1); g.fillRect(2, 2, T - 4, T - 4);
+      g.fillStyle(0x6fd88c, 0.3); g.fillCircle(T / 2, T / 2, 26);
+      g.fillStyle(0x3498db, 1); g.fillCircle(T / 2, T / 2, 6);
+      g.lineStyle(2, 0x196b32, 1); g.strokeCircle(T / 2, T / 2, 22);
+      g.generateTexture('tile_plaza', T, T);
+      g.destroy();
+    }
+
+    // Textura tile centro URRA
+    function makeCentroTile(scene) {
+      const T = CONFIG.TILE;
+      const g = scene.make.graphics({ add: false });
+      g.fillStyle(0x0f1e2e, 1); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x142536, 1); g.fillRect(2, 2, T - 4, T - 4);
+      g.generateTexture('tile_centro', T, T);
+      g.destroy();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ESCENA 1: BootScene — intro animada
+    // ═══════════════════════════════════════════════════════════
+    class BootScene extends Phaser.Scene {
+      constructor() { super({ key: 'BootScene' }); }
+      create() {
+        const cx = this.cameras.main.centerX;
+        const cy = this.cameras.main.centerY;
+        this.cameras.main.setBackgroundColor('#0a0f1a');
+
+        const letters = 'UN RAUCH + LINDO'.split('');
+        const totalW = letters.length * 22;
+        letters.forEach((ch, i) => {
+          const col = i < 9 ? '#4ecdc4' : '#ffd700';
+          const txt = this.add.text(cx - totalW / 2 + i * 22 + 11, cy - 200, ch, {
+            fontFamily: 'Nunito', fontSize: '44px', fontStyle: 'bold',
+            color: col, stroke: '#0a0f1a', strokeThickness: 4
+          }).setOrigin(0.5).setAlpha(0);
+          this.tweens.add({ targets: txt, y: cy - 50, alpha: 1, duration: 430, delay: i * 65, ease: 'Bounce.easeOut' });
+        });
+
+        const sub = this.add.text(cx, cy + 22, '♻️  Rauch, Buenos Aires', {
+          fontFamily: 'Nunito', fontSize: '21px', color: '#6a90aa'
+        }).setOrigin(0.5).setAlpha(0);
+        this.tweens.add({ targets: sub, alpha: 1, duration: 600, delay: 1100 });
+
+        const dot = this.add.text(cx, cy + 62, '●', {
+          fontFamily: 'Nunito', fontSize: '18px', color: '#4ecdc4'
+        }).setOrigin(0.5).setAlpha(0);
+        this.tweens.add({
+          targets: dot, alpha: 1, duration: 350, delay: 1700, onComplete: () => {
+            this.tweens.add({ targets: dot, alpha: 0.15, duration: 380, yoyo: true, repeat: -1 });
+          }
+        });
+
+        this.time.delayedCall(2700, () => {
+          this.cameras.main.fadeOut(350);
+          this.time.delayedCall(350, () => this.scene.start('PreloadScene'));
+        });
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ESCENA 2: PreloadScene — carga assets reales + fallbacks
+    // ═══════════════════════════════════════════════════════════
+    class PreloadScene extends Phaser.Scene {
+      constructor() { super({ key: 'PreloadScene' }); }
+
+      preload() {
+        const cx = this.cameras.main.centerX;
+        const cy = this.cameras.main.centerY;
+        this.cameras.main.setBackgroundColor('#0a0f1a');
+
+        // Barra de carga visual
+        const barW = 340, barH = 22;
+        const barBg = this.add.graphics();
+        barBg.fillStyle(0x1a2436, 1);
+        barBg.fillRoundedRect(cx - barW / 2, cy + 10, barW, barH, 8);
+        barBg.lineStyle(1.5, 0x4ecdc4, 0.4);
+        barBg.strokeRoundedRect(cx - barW / 2, cy + 10, barW, barH, 8);
+
+        const bar = this.add.graphics();
+        const label = this.add.text(cx, cy - 28, 'Cargando Rauch...', {
+          fontFamily: 'Nunito', fontSize: '19px', color: '#8ab0cc'
+        }).setOrigin(0.5);
+        const pct = this.add.text(cx, cy + 46, '0%', {
+          fontFamily: 'Nunito', fontSize: '15px', color: '#4ecdc4', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        this.load.on('progress', v => {
+          bar.clear();
+          bar.fillStyle(0x4ecdc4, 1);
+          bar.fillRoundedRect(cx - barW / 2 + 2, cy + 12, Math.max(0, barW * v - 4), barH - 4, 6);
+          // degradado
+          bar.fillStyle(0x2ecc71, 0.4);
+          bar.fillRoundedRect(cx - barW / 2 + 2, cy + 12, Math.max(0, barW * v - 4), (barH - 4) * 0.45, { tl: 6, tr: 6, bl: 0, br: 0 });
+          pct.setText(Math.round(v * 100) + '%');
+        });
+
+        this.load.on('loaderror', file => {
+          console.warn('⚠️ Asset no cargado (usará fallback):', file.key);
+          this._failed = this._failed || {};
+          this._failed[file.key] = true;
+        });
+
+        // Cargar directamente las imágenes transparentes y optimizadas
+        this.load.image('camion', 'assets/camion.png');
+        this.load.image('bolsa_verde', 'assets/bolsa_verde.png');
+        this.load.image('bolsa_negra', 'assets/bolsa_negra.png');
+        this.load.image('bolsa_roja', 'assets/bolsa_roja.png');
+        this.load.image('centro_reciclado', 'assets/centro_reciclado.png');
+        this.load.image('casa_azul', 'assets/casa_azul.png');
+        this.load.image('casa_roja', 'assets/casa_roja.png');
+        this.load.image('casa_amarilla', 'assets/casa_amarilla.png');
+        this.load.image('calle', 'assets/calle.png');
+        this.load.image('work', 'assets/work.png');
+
+        // Cargar spritesheet animado del obstáculo desde el GIF procesado
+        this.load.spritesheet('work_anim', 'assets/work_spritesheet.png', {
+          frameWidth: 64,
+          frameHeight: 64
+        });
+      }
+
+      create() {
+        this._failed = this._failed || {};
+        const T = CONFIG.TILE;
+
+        // ─ Generar texturas proceduales de tiles ─
+        makeGrassTexture(this);
+        makePlazaTexture(this);
+        makeCentroTile(this);
+
+        // ─ Partícula ─
+        const pg = this.make.graphics({ add: false });
+        pg.fillStyle(0xffffff, 1); pg.fillCircle(4, 4, 4);
+        pg.generateTexture('particle', 8, 8); pg.destroy();
+
+        // ─ Calle ─
+        if (!this._failed['calle']) {
+          try {
+            const src = this.textures.get('calle').getSourceImage();
+            const cv = document.createElement('canvas');
+            cv.width = T; cv.height = T;
+            cv.getContext('2d').drawImage(src, 0, 0, T, T);
+            this.textures.remove('calle');
+            this.textures.addCanvas('calle', cv);
+          } catch (e) {
+            console.error("Error resizing street tile:", e);
+            makeStreetTexture(this);
+            this.textures.rename('calle_fb', 'calle');
+          }
+        } else {
+          makeStreetTexture(this);
+          this.textures.rename('calle_fb', 'calle');
+        }
+
+        // ─ Camión (Fallback si falla) ─
+        if (this._failed['camion']) {
+          makeFallback(this, 'camion', T, T, 0xff6600);
+        }
+
+        // ─ Bolsas (Fallbacks si fallan) ─
+        const bags = [
+          { key: 'bolsa_verde', fb: 0x27ae60 },
+          { key: 'bolsa_negra', fb: 0x2c3340 },
+          { key: 'bolsa_roja', fb: 0xc0392b }
+        ];
+        bags.forEach(b => {
+          if (this._failed[b.key]) {
+            makeFallback(this, b.key, 44, 44, b.fb);
+          }
+        });
+
+        // ─ Centro reciclado (Fallback si falla) ─
+        if (this._failed['centro_reciclado']) {
+          makeFallback(this, 'centro_reciclado', T * 3, T * 3, 0x2288cc);
+        }
+
+        // ─ Casas (Fallbacks si fallan) ─
+        if (this._failed['casa_azul']) makeFallback(this, 'casa_azul', T * 2, T * 2, 0x2980b9);
+        if (this._failed['casa_roja']) makeFallback(this, 'casa_roja', T * 2, T * 2, 0xc0392b);
+        if (this._failed['casa_amarilla']) makeFallback(this, 'casa_amarilla', T * 2, T * 2, 0xf1c40f);
+
+        // ─ WORK / obstáculo (Fallback si falla) ─
+        if (this._failed['work']) {
+          makeFallback(this, 'work', T, T, 0xf39c12);
+        }
+
+        // ─ Registrar animación del obstáculo de obra WORK.gif ─
+        if (!this._failed['work_anim']) {
+          this.anims.create({
+            key: 'work_flash',
+            frames: this.anims.generateFrameNumbers('work_anim', { start: 0, end: 42 }),
+            frameRate: 20,
+            repeat: -1
+          });
+        }
+
+        // Transición a juego
+        this.time.delayedCall(200, () => {
+          this.cameras.main.fadeOut(300);
+          this.time.delayedCall(300, () => {
+            this.scene.start('GameScene', { level: 1, score: 0, fromMenu: true });
+          });
+        });
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ESCENA 3: GameScene — Jugabilidad completa
+    // ═══════════════════════════════════════════════════════════
+    class GameScene extends Phaser.Scene {
+      constructor() { super({ key: 'GameScene' }); }
+
+      init(data) {
+        this.level = data.level || 1;
+        this.score = data.score || 0;
+        this.fromMenu = data.fromMenu || false;
+        this.fuel = CONFIG.FUEL_FULL;
+        this.cargoType = null;
+        this.cargoCount = 0;
+        this.totalDelivered = { verde: 0, negra: 0, roja: 0 };
+        const n = this.level === 1 ? CONFIG.BAGS_L1 : CONFIG.BAGS_L2;
+        this.bagsPerType = n;
+        this.bagsRemaining = { verde: n, negra: n, roja: n };
+        this.isGameOver = false;
+        this.isDelivering = false;
+        this.gameActive = false;
+        this.totalBagsToDeliver = n * 3;
+        this.totalBagsDelivered = 0;
+        // Posición inicial: calle exterior col=1, fila=0
+        this.gridX = 1; this.gridY = 0;
+        this.targetGridX = 1; this.targetGridY = 0;
+        this.isMoving = false;
+        this.moveProgress = 0;
+        this.willCrash = false;
+        this.centroTween = null;
+        this.fuelBlinkTw = null;
+        this._menuObjs = [];
+        this.obstacleGrid = {};
+        this.bagsGrid = {};
+      }
+
+      create() {
+        const T = CONFIG.TILE;
+
+        this.drawMap();
+
+        this.obstaclesGroup = this.physics.add.staticGroup();
+        this.bagsGroup = this.physics.add.group();
+
+        this.placeObstacles();
+        this.placeBags();
+
+        // Centro URRA (imagen limpia)
+        const cX = 18 * T + T / 2, cY = 18 * T + T / 2;
+        this.centroSprite = this.add.image(cX, cY, 'centro_reciclado')
+          .setDisplaySize(T * 3.2, T * 3.2).setDepth(2);
+        this.add.text(cX, cY + T * 1.7, 'URRA ♻️', {
+          fontFamily: 'Nunito', fontSize: '14px', fontStyle: 'bold', color: '#fff',
+          backgroundColor: '#1a88cc', padding: { x: 10, y: 4 }
+        }).setOrigin(0.5).setDepth(3);
+
+        // Camión (imagen limpia, sin fondo)
+        const sX = this.gridX * T + T / 2, sY = this.gridY * T + T / 2;
+        this.truck = this.add.image(sX, sY, 'camion')
+          .setDisplaySize(T * 2.0, T * 2.0).setDepth(5).setAngle(180);
+
+        this.cameras.main.startFollow(this.truck, true, 0.11, 0.11);
+        this.cameras.main.setZoom(1.0); // Forzar zoom a 1.0 para evitar que el HUD responsivo se desplace fuera de la pantalla debido a los límites de la cámara
+
+        this.physics.world.setBounds(0, 0, CONFIG.MAP_COLS * T, CONFIG.MAP_ROWS * T);
+
+        // Ajustar límites de la cámara con un margen superior igual al alto del HUD
+        // para que las calles superiores y el camión nunca queden ocultos debajo de la barra de datos
+        const isMobile = this.cameras.main.width < 600;
+        const hudH = isMobile ? 116 : 72;
+        this.cameras.main.setBounds(0, -hudH, CONFIG.MAP_COLS * T, CONFIG.MAP_ROWS * T + hudH);
+
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.wasd = this.input.keyboard.addKeys({
+          up: Phaser.Input.Keyboard.KeyCodes.W,
+          down: Phaser.Input.Keyboard.KeyCodes.S,
+          left: Phaser.Input.Keyboard.KeyCodes.A,
+          right: Phaser.Input.Keyboard.KeyCodes.D
+        });
+        this.joystickDir = { x: 0, y: 0 };
+        this.joystickActive = false;
+        this.createJoystick();
+
+        // Tooltip
+        this.tooltipTxt = this.add.text(0, 0, '', {
+          fontFamily: 'Nunito', fontSize: '12px', color: '#fff',
+          backgroundColor: 'rgba(0,0,0,0.82)', padding: { x: 7, y: 4 }
+        }).setOrigin(0.5, 1).setDepth(120).setVisible(false);
+
+        this.createHUD();
+
+        document.getElementById('overlay-container').className = '';
+        document.getElementById('gameover-panel').className = 'overlay-panel';
+        document.getElementById('victory-panel').className = 'overlay-panel';
+
+        if (this.fromMenu) {
+          this.showMenu();
+        } else {
+          this.startGameplay();
+        }
+      }
+
+      // ─── MAPA ──────────────────────────────────────────────────
+      drawMap() {
+        const T = CONFIG.TILE;
+        this.wallsGroup = this.physics.add.staticGroup();
+
+        for (let r = 0; r < CONFIG.MAP_ROWS; r++) {
+          for (let c = 0; c < CONFIG.MAP_COLS; c++) {
+            const tile = MAP_DATA[r][c];
+            const px = c * T + T / 2, py = r * T + T / 2;
+            const texKey = tile === 0 ? 'tile_manzana'
+              : tile === 1 ? 'calle'
+                : tile === 2 ? 'tile_plaza'
+                  : 'tile_centro';
+            const img = this.add.image(px, py, texKey).setDepth(0);
+
+            if (tile === 1) { // es una calle
+              // Determinar vecinos transitables para orientar las líneas de la calle
+              const isRoad = (col, row) => (row >= 0 && row < CONFIG.MAP_ROWS && col >= 0 && col < CONFIG.MAP_COLS && MAP_DATA[row][col] > 0);
+              const left = isRoad(c - 1, r);
+              const right = isRoad(c + 1, r);
+              const up = isRoad(c, r - 1);
+              const down = isRoad(c, r + 1);
+
+              // Si es una calle vertical y no horizontal, rotar 90 grados
+              if ((up || down) && !left && !right) {
+                img.setAngle(90);
+              } else if ((left || right) && !up && !down) {
+                img.setAngle(0);
+              } else {
+                // Intersecciones/cruces
+                img.setAngle(0);
+              }
+            }
+
+            if (tile === 0) {
+              const w = this.wallsGroup.create(px, py, 'tile_manzana');
+              w.setDisplaySize(T, T).setVisible(false).refreshBody();
+            }
+          }
+        }
+
+        // Mezclar las casas de forma dinámica y balanceada por manzana
+        const houseKeys = ['casa_azul', 'casa_roja', 'casa_amarilla'];
+        for (let r = 1; r < CONFIG.MAP_ROWS - 2; r += 3) {
+          for (let c = 1; c < CONFIG.MAP_COLS - 2; c += 3) {
+            // Excluir zona plaza (cols 9-11, filas 9-11)
+            if (c >= 8 && c <= 12 && r >= 8 && r <= 12) continue;
+            // Excluir zona URRA (cols 16+, filas 16+)
+            if (c >= 16 && r >= 16) continue;
+            // Centro de la manzana: los 4 cuadrantes internos (2×2) tienen su centro en:
+            const px = c * T + T;   // c*T + T/2 + T/2 = c*T + T
+            const py = r * T + T;
+
+            const houseIndex = (Math.floor(r / 3) + Math.floor(c / 3)) % 3;
+            const currentHouseKey = houseKeys[houseIndex];
+
+            this.add.image(px, py, currentHouseKey)
+              .setDisplaySize(T * 2, T * 2)
+              .setDepth(1);
+          }
+        }
+      }
+
+      // ─── OBSTÁCULOS ────────────────────────────────────────────
+      placeObstacles() {
+        const T = CONFIG.TILE;
+        const min = this.level === 1 ? CONFIG.OBS_MIN_L1 : CONFIG.OBS_MIN_L2;
+        const max = this.level === 1 ? CONFIG.OBS_MAX_L1 : CONFIG.OBS_MAX_L2;
+        const count = Phaser.Math.Between(min, max);
+        const forbidden = new Set();
+
+        for (let r = 16; r < 20; r++) for (let c = 16; c < 20; c++) forbidden.add(r + ',' + c);
+        for (let r = 8; r < 13; r++) for (let c = 8; c < 13; c++) forbidden.add(r + ',' + c);
+        ['0,0', '0,1', '0,2', '0,3', '1,0', '2,0', '3,0'].forEach(k => forbidden.add(k));
+
+        let placed = 0, attempts = 0;
+        while (placed < count && attempts < 400) {
+          attempts++;
+          const c = Phaser.Math.Between(1, CONFIG.MAP_COLS - 2);
+          const r = Phaser.Math.Between(1, CONFIG.MAP_ROWS - 2);
+          if (MAP_DATA[r][c] !== 1) continue;
+          if (forbidden.has(r + ',' + c)) continue;
+
+          const px = c * T + T / 2, py = r * T + T / 2;
+
+          let obs;
+          if (this.textures.exists('work_anim') && this.anims.exists('work_flash')) {
+            obs = this.obstaclesGroup.create(px, py, 'work_anim');
+            obs.play('work_flash');
+          } else {
+            obs = this.obstaclesGroup.create(px, py, 'work');
+            this.tweens.add({
+              targets: obs, alpha: 0.55,
+              duration: 300 + Math.random() * 200,
+              yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+            });
+          }
+
+          obs.setDisplaySize(T * 0.92, T * 0.92).setDepth(3);
+          obs.body.setSize(T * 0.48, T * 0.48);
+          obs.refreshBody();
+
+          forbidden.add(r + ',' + c);
+          this.obstacleGrid[r + ',' + c] = true;
+          placed++;
+        }
+      }
+
+      // ─── BOLSAS ────────────────────────────────────────────────
+      placeBags() {
+        const T = CONFIG.TILE;
+        const tipos = [
+          { key: 'bolsa_verde', type: 'verde', tip: 'Orgánicos: comida, yerba, cáscaras...' },
+          { key: 'bolsa_negra', type: 'negra', tip: 'Reciclables: plástico, cartón, vidrio...' },
+          { key: 'bolsa_roja', type: 'roja', tip: 'Sanitarios / peligrosos ☣' }
+        ];
+        const occupied = new Set();
+        for (const pos in this.obstacleGrid) occupied.add(pos);
+        for (let r = 16; r < 20; r++) for (let c = 16; c < 20; c++) occupied.add(r + ',' + c);
+        ['0,0', '0,1', '0,2', '1,0', '2,0'].forEach(k => occupied.add(k));
+
+        tipos.forEach(t => {
+          let placed = 0, attempts = 0;
+          while (placed < this.bagsPerType && attempts < 400) {
+            attempts++;
+            const c = Phaser.Math.Between(1, CONFIG.MAP_COLS - 2);
+            const r = Phaser.Math.Between(1, CONFIG.MAP_ROWS - 2);
+            if (MAP_DATA[r][c] !== 1 && MAP_DATA[r][c] !== 2) continue;
+            if (occupied.has(r + ',' + c)) continue;
+
+            const px = c * T + T / 2, py = r * T + T / 2;
+            const bag = this.bagsGroup.create(px, py, t.key);
+            bag.setDisplaySize(T * 0.66, T * 0.66).setDepth(2);
+            bag.body.setSize(T * 0.44, T * 0.44);
+            bag.setData('type', t.type);
+            bag.setData('tip', t.tip);
+
+            this.tweens.add({
+              targets: bag, y: py - 6,
+              duration: 750 + Math.random() * 400,
+              yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+            });
+
+            occupied.add(r + ',' + c);
+            this.bagsGrid[r + ',' + c] = bag;
+            placed++;
+          }
+        });
+      }
+
+      // ─── JOYSTICK ──────────────────────────────────────────────
+      createJoystick() {
+        const hasTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        if (!hasTouch) return;
+        const W = this.cameras.main.width;
+        const H = this.cameras.main.height;
+        const BR = 58, TR = 24;
+        const BX = 90, BY = H - 90; // Posición dinámica en base al alto de la pantalla
+
+        this.joyBase = this.add.circle(BX, BY, BR, 0x1a2a44, 0.5).setScrollFactor(0).setDepth(200);
+        const ring = this.add.circle(BX, BY, BR, 0, 0).setScrollFactor(0).setDepth(200);
+        ring.setStrokeStyle(2, 0x4ecdc4, 0.65);
+        this.joyThumb = this.add.circle(BX, BY, TR, 0xffffff, 0.75).setScrollFactor(0).setDepth(201);
+
+        this.input.on('pointerdown', p => {
+          if (p.x < BX + BR + 20 && p.y > BY - BR - 20) {
+            this.joystickActive = true;
+            this.joyPtrId = p.id;
+          }
+        });
+        this.input.on('pointermove', p => {
+          if (!this.joystickActive || p.id !== this.joyPtrId) return;
+          const dx = p.x - BX, dy = p.y - BY;
+          const dist = Math.min(BR, Math.hypot(dx, dy));
+          const ang = Math.atan2(dy, dx);
+          this.joyThumb.x = BX + Math.cos(ang) * dist;
+          this.joyThumb.y = BY + Math.sin(ang) * dist;
+          if (dist / BR < 0.25) {
+            this.joystickDir = { x: 0, y: 0 };
+          } else if (Math.abs(dx) >= Math.abs(dy)) {
+            this.joystickDir = { x: dx > 0 ? 1 : -1, y: 0 };
+          } else {
+            this.joystickDir = { x: 0, y: dy > 0 ? 1 : -1 };
+          }
+        });
+        this.input.on('pointerup', p => {
+          if (p.id === this.joyPtrId) {
+            this.joystickActive = false;
+            this.joystickDir = { x: 0, y: 0 };
+            this.joyThumb.x = BX; this.joyThumb.y = BY;
+          }
+        });
+      }
+
+      // ─── HUD ───────────────────────────────────────────────────
+      createHUD() {
+        const W = this.cameras.main.width;
+        const isMobile = W < 600;
+        const hudH = isMobile ? 116 : 72;
+
+        this.hudCont = this.add.container(0, 0).setScrollFactor(0).setDepth(150);
+
+        // Fondo HUD
+        const bg = this.add.graphics().setScrollFactor(0);
+        bg.fillStyle(0x080e1c, 0.94); bg.fillRect(0, 0, W, hudH);
+        bg.lineStyle(2, 0x4ecdc4, 0.3); bg.lineBetween(0, hudH, W, hudH);
+        this.hudCont.add(bg);
+
+        if (isMobile) {
+          // 📱 DISPOSICIÓN MÓVIL (Dos filas)
+
+          // --- FILA 1: Combustible y Puntos ---
+          const fuelIcon = this.add.text(12, 10, '⛽', { fontSize: '18px' }).setScrollFactor(0);
+          const fBg = this.add.graphics().setScrollFactor(0);
+          fBg.fillStyle(0x1a2436, 1); fBg.fillRoundedRect(42, 12, 120, 16, 6);
+          this.fuelGfx = this.add.graphics().setScrollFactor(0);
+          this.fuelPctTxt = this.add.text(102, 12, '100%', {
+            fontFamily: 'Nunito', fontSize: '11px', fontStyle: 'bold', color: '#fff'
+          }).setOrigin(0.5, 0).setScrollFactor(0);
+          this.hudCont.add([fuelIcon, fBg, this.fuelGfx, this.fuelPctTxt]);
+
+          this.scoreTxt = this.add.text(W - 12, 4, '0', {
+            fontFamily: 'Nunito', fontSize: '24px', fontStyle: 'bold', color: '#ffd700'
+          }).setOrigin(1, 0).setScrollFactor(0);
+          const scoreLbl = this.add.text(W - 12, 30, 'PUNTOS', {
+            fontFamily: 'Nunito', fontSize: '10px', color: '#556677'
+          }).setOrigin(1, 0).setScrollFactor(0);
+          this.hudCont.add([this.scoreTxt, scoreLbl]);
+
+          // --- FILA 2: Nivel, Contadores y Camión ---
+          this.levelTxt = this.add.text(12, 54, 'NIVEL ' + this.level, {
+            fontFamily: 'Nunito', fontSize: '11px', fontStyle: 'bold', color: '#4ecdc4'
+          }).setScrollFactor(0);
+          this.bagCountTxt = this.add.text(12, 72, '', {
+            fontFamily: 'Nunito', fontSize: '11px', color: '#99aabb'
+          }).setScrollFactor(0);
+          this.hudCont.add([this.levelTxt, this.bagCountTxt]);
+
+          this.cargoSlots = [];
+          const slotsStartX = W - (CONFIG.BAG_CAP * 34) - 12;
+          for (let i = 0; i < CONFIG.BAG_CAP; i++) {
+            const sx = slotsStartX + i * 34 + 17;
+            const slBg = this.add.graphics().setScrollFactor(0);
+            slBg.fillStyle(0x141c30, 1); slBg.fillRoundedRect(sx - 14, 52, 28, 28, 6);
+            slBg.lineStyle(1.5, 0x252d48, 1); slBg.strokeRoundedRect(sx - 14, 52, 28, 28, 6);
+            this.hudCont.add(slBg);
+            this.cargoSlots.push({ x: sx, y: 66, icon: null });
+          }
+
+          this.cargoLblTxt = this.add.text(W - 12, 85, 'Camión vacía', {
+            fontFamily: 'Nunito', fontSize: '11px', color: '#7888a0'
+          }).setOrigin(1, 0).setScrollFactor(0);
+          this.hudCont.add(this.cargoLblTxt);
+
+        } else {
+          // 💻 DISPOSICIÓN ESCRITORIO (Una fila)
+          const fuelIcon = this.add.text(16, 9, '⛽', { fontSize: '18px' }).setScrollFactor(0);
+          const fBg = this.add.graphics().setScrollFactor(0);
+          fBg.fillStyle(0x1a2436, 1); fBg.fillRoundedRect(46, 12, 150, 16, 6);
+          this.fuelGfx = this.add.graphics().setScrollFactor(0);
+          this.fuelPctTxt = this.add.text(121, 12, '100%', {
+            fontFamily: 'Nunito', fontSize: '11px', fontStyle: 'bold', color: '#fff'
+          }).setOrigin(0.5, 0).setScrollFactor(0);
+          this.hudCont.add([fuelIcon, fBg, this.fuelGfx, this.fuelPctTxt]);
+
+          this.levelTxt = this.add.text(16, 40, 'NIVEL ' + this.level, {
+            fontFamily: 'Nunito', fontSize: '12px', fontStyle: 'bold', color: '#4ecdc4'
+          }).setScrollFactor(0);
+          this.bagCountTxt = this.add.text(80, 46, '', {
+            fontFamily: 'Nunito', fontSize: '11px', color: '#99aabb'
+          }).setScrollFactor(0);
+          this.hudCont.add([this.levelTxt, this.bagCountTxt]);
+
+          this.cargoSlots = [];
+          for (let i = 0; i < CONFIG.BAG_CAP; i++) {
+            const sx = W / 2 - (CONFIG.BAG_CAP * 42) / 2 + i * 42 + 21;
+            const slBg = this.add.graphics().setScrollFactor(0);
+            slBg.fillStyle(0x141c30, 1); slBg.fillRoundedRect(sx - 17, 8, 34, 34, 7);
+            slBg.lineStyle(1.5, 0x252d48, 1); slBg.strokeRoundedRect(sx - 17, 8, 34, 34, 7);
+            this.hudCont.add(slBg);
+            this.cargoSlots.push({ x: sx, y: 25, icon: null });
+          }
+          this.cargoLblTxt = this.add.text(W / 2, 50, 'Camión vacía', {
+            fontFamily: 'Nunito', fontSize: '12px', color: '#7888a0'
+          }).setOrigin(0.5).setScrollFactor(0);
+          this.hudCont.add(this.cargoLblTxt);
+
+          this.scoreTxt = this.add.text(W - 16, 10, '0', {
+            fontFamily: 'Nunito', fontSize: '28px', fontStyle: 'bold', color: '#ffd700'
+          }).setOrigin(1, 0).setScrollFactor(0);
+          const scoreLbl = this.add.text(W - 16, 44, 'PUNTOS', {
+            fontFamily: 'Nunito', fontSize: '11px', color: '#556677'
+          }).setOrigin(1, 0).setScrollFactor(0);
+          this.hudCont.add([this.scoreTxt, scoreLbl]);
+        }
+
+        this.hudCont.setVisible(false);
+      }
+
+      refreshFuel() {
+        const pct = Math.max(0, this.fuel);
+        const W = this.cameras.main.width;
+        const isMobile = W < 600;
+        const maxBarW = isMobile ? 120 : 150;
+        const startX = isMobile ? 42 : 46;
+
+        const w = maxBarW * (pct / 100);
+        this.fuelGfx.clear();
+        let col = 0x2ecc71;
+        if (pct <= 25) col = 0xe74c3c;
+        else if (pct <= 50) col = 0xf1c40f;
+        this.fuelGfx.fillStyle(col, 1);
+        this.fuelGfx.fillRoundedRect(startX, 12, w, 16, 6);
+        this.fuelGfx.fillStyle(0xffffff, 0.15);
+        this.fuelGfx.fillRoundedRect(startX, 12, w, 7, { tl: 6, tr: 6, bl: 0, br: 0 });
+        this.fuelPctTxt.setText(Math.round(pct) + '%');
+      }
+
+      refreshCargo() {
+        this.cargoSlots.forEach(s => { if (s.icon) { s.icon.destroy(); s.icon = null; } });
+        const W = this.cameras.main.width;
+        const isMobile = W < 600;
+        const iconSize = isMobile ? 22 : 28;
+
+        for (let i = 0; i < this.cargoCount; i++) {
+          const s = this.cargoSlots[i];
+          const tk = this.cargoType === 'negra' ? 'bolsa_negra'
+            : this.cargoType === 'roja' ? 'bolsa_roja'
+              : 'bolsa_verde';
+          s.icon = this.add.image(s.x, s.y, tk)
+            .setDisplaySize(iconSize, iconSize).setScrollFactor(0).setDepth(151);
+        }
+        if (this.cargoCount === 0) {
+          this.cargoLblTxt.setText('Camión vacío').setColor('#7888a0');
+        } else {
+          const nm = { verde: '🟢 Orgánicos', negra: '⚫ Reciclables', roja: '🔴 Sanitarios' };
+          const cl = { verde: '#2ecc71', negra: '#aabbcc', roja: '#e74c3c' };
+
+          if (isMobile) {
+            const nmMobile = { verde: '🟢 Org.', negra: '⚫ Recic.', roja: '🔴 Sanit.' };
+            this.cargoLblTxt.setText((nmMobile[this.cargoType] || '') + ' ' + this.cargoCount + '/' + CONFIG.BAG_CAP);
+          } else {
+            this.cargoLblTxt.setText((nm[this.cargoType] || '') + ' · ' + this.cargoCount + '/' + CONFIG.BAG_CAP);
+          }
+          this.cargoLblTxt.setColor(cl[this.cargoType] || '#fff');
+        }
+      }
+
+      refreshScore() {
+        this.scoreTxt.setText(this.score.toString());
+        this.tweens.add({ targets: this.scoreTxt, scaleX: 1.32, scaleY: 1.32, duration: 110, yoyo: true });
+      }
+
+      refreshBagCounts() {
+        this.bagCountTxt.setText(
+          '🟢' + this.bagsRemaining.verde +
+          ' ⚫' + this.bagsRemaining.negra +
+          ' 🔴' + this.bagsRemaining.roja
+        );
+      }
+
+      // ─── MENÚ ──────────────────────────────────────────────────
+      showMenu() {
+        this.gameActive = false;
+        this._menuObjs = [];
+        const m = (o) => { this._menuObjs.push(o); return o; };
+
+        const W = this.cameras.main.width;
+        const H = this.cameras.main.height;
+        const cx = W / 2;
+        const cy = H / 2;
+
+        const fade = m(this.add.graphics().setScrollFactor(0).setDepth(300));
+        fade.fillStyle(0x0a0f1a, 0.92); fade.fillRect(0, 0, W, H);
+
+        const pW = 408, pH = 472;
+        const px = cx - pW / 2, py = cy - pH / 2;
+
+        const panel = m(this.add.graphics().setScrollFactor(0).setDepth(301));
+        panel.fillStyle(0x0a1526, 0.98);
+        panel.fillRoundedRect(px, py, pW, pH, 20);
+        panel.lineStyle(3, 0x4ecdc4, 1);
+        panel.strokeRoundedRect(px, py, pW, pH, 20);
+        panel.lineStyle(1, 0x4ecdc4, 0.18);
+        panel.strokeRoundedRect(px + 8, py + 8, pW - 16, pH - 16, 16);
+
+        m(this.add.text(cx, py + 39, '♻️ UN RAUCH + LINDO', {
+          fontFamily: 'Nunito', fontSize: '29px', fontStyle: 'bold', color: '#4ecdc4'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
+
+        m(this.add.text(cx, py + 74, 'Rauch, Buenos Aires', {
+          fontFamily: 'Nunito', fontSize: '15px', color: '#5a8090'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
+
+        const sep = m(this.add.graphics().setScrollFactor(0).setDepth(302));
+        sep.lineStyle(1, 0x4ecdc4, 0.22); sep.lineBetween(px + 20, py + 94, px + pW - 20, py + 94);
+
+        const lines = [
+          '🚛  Manejá el camión sólo por las calles',
+          '🟢  Juntá bolsas del mismo tipo de residuo',
+          '♻️  Llevá la carga al centro URRA  (↘ esquina)',
+          '🚫  ¡No mezcles las bolsas en el camión!',
+          '⛽  ¡Controlá el combustible!',
+          '✅  ¡Juntá todas las bolsas para ganar!'
+        ];
+        lines.forEach((txt, i) => {
+          m(this.add.text(cx, py + 108 + i * 38, txt, {
+            fontFamily: 'Nunito', fontSize: '14.5px', color: '#ccdcee'
+          }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
+        });
+
+        const btnBg = m(this.add.graphics().setScrollFactor(0).setDepth(302));
+        const drawBtn = (hov) => {
+          btnBg.clear();
+          const c = hov ? 0xff8888 : 0xff6b6b;
+          btnBg.fillStyle(c, 1);
+          btnBg.fillRoundedRect(cx - 102, py + 338, 204, 54, 14);
+          if (!hov) {
+            btnBg.fillStyle(0xffa0a0, 0.3);
+            btnBg.fillRoundedRect(cx - 100, py + 340, 200, 18, { tl: 12, tr: 12, bl: 0, br: 0 });
+          }
+        };
+        drawBtn(false);
+
+        m(this.add.text(cx, py + 365, '¡JUGAR!', {
+          fontFamily: 'Nunito', fontSize: '26px', fontStyle: 'bold', color: '#fff'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(303));
+
+        const zone = m(this.add.zone(cx, py + 365, 204, 54).setInteractive().setScrollFactor(0).setDepth(303));
+        zone.on('pointerover', () => drawBtn(true));
+        zone.on('pointerout', () => drawBtn(false));
+        zone.on('pointerdown', () => {
+          this._menuObjs.forEach(o => { try { o.destroy(); } catch (e) { } });
+          this._menuObjs = [];
+          this.startGameplay();
+        });
+
+        m(this.add.text(cx, py + 408, 'Flechas / WASD  •  Táctil: Joystick', {
+          fontFamily: 'Nunito', fontSize: '12.5px', color: '#445566'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(302));
+      }
+
+      startGameplay() {
+        this.gameActive = true;
+        this.hudCont.setVisible(true);
+        this.refreshFuel();
+        this.refreshCargo();
+        this.refreshScore();
+        this.refreshBagCounts();
+        this.truck.setAlpha(0);
+        this.tweens.add({ targets: this.truck, alpha: 1, duration: 350, ease: 'Sine.easeIn' });
+      }
+
+      // ─── UPDATE ────────────────────────────────────────────────
+      update(time, delta) {
+        if (!this.gameActive || this.isGameOver || this.isDelivering) return;
+
+        const T = CONFIG.TILE;
+
+        if (!this.isMoving) {
+          let dx = 0, dy = 0;
+          if (this.cursors.left.isDown || this.wasd.left.isDown) dx = -1;
+          else if (this.cursors.right.isDown || this.wasd.right.isDown) dx = 1;
+          else if (this.cursors.up.isDown || this.wasd.up.isDown) dy = -1;
+          else if (this.cursors.down.isDown || this.wasd.down.isDown) dy = 1;
+
+          if (this.joystickActive && (this.joystickDir.x || this.joystickDir.y)) {
+            dx = this.joystickDir.x; dy = this.joystickDir.y;
+          }
+
+          if (dx || dy) {
+            const nx = this.gridX + dx, ny = this.gridY + dy;
+            if (nx >= 0 && nx < CONFIG.MAP_COLS && ny >= 0 && ny < CONFIG.MAP_ROWS) {
+              if (MAP_DATA[ny][nx] > 0) {  // solo calle, plaza o centro
+                this.targetGridX = nx;
+                this.targetGridY = ny;
+                this.isMoving = true;
+                this.moveProgress = 0;
+                this.setTruckAngle(dx, dy);
+                this.willCrash = !!this.obstacleGrid[ny + ',' + nx];
+              }
+            }
+          }
+        }
+
+        if (this.isMoving) {
+          this.moveProgress += (CONFIG.MOVE_SPEED * delta) / 1000;
+
+          this.fuel -= (CONFIG.FUEL_RATE * delta) / 1000;
+          if (this.fuel <= 0) {
+            this.fuel = 0; this.refreshFuel();
+            this.gameOver('SIN COMBUSTIBLE 😢'); return;
+          }
+          this.refreshFuel();
+          if (this.fuel < CONFIG.FUEL_WARN) this.startFuelBlink();
+
+          if (this.moveProgress >= 1) {
+            const tx = this.targetGridX, ty = this.targetGridY;
+            this.truck.x = tx * T + T / 2;
+            this.truck.y = ty * T + T / 2;
+            this.gridX = tx; this.gridY = ty;
+            this.isMoving = false;
+            this.moveProgress = 0;
+            if (this.willCrash) { this.triggerCrash(); return; }
+            this.checkCell();
+          } else {
+            const sx = this.gridX * T + T / 2, sy = this.gridY * T + T / 2;
+            const ex = this.targetGridX * T + T / 2, ey = this.targetGridY * T + T / 2;
+            this.truck.x = sx + (ex - sx) * this.moveProgress;
+            this.truck.y = sy + (ey - sy) * this.moveProgress;
+            if (this.willCrash && this.moveProgress >= 0.5) { this.triggerCrash(); return; }
+          }
+        }
+
+        this.updateTooltip();
+
+        // Pulso del centro cuando hay carga
+        if (this.cargoCount > 0 && !this.centroTween) {
+          const bs = this.centroSprite.scaleX;
+          this.centroTween = this.tweens.add({
+            targets: this.centroSprite, scaleX: bs * 1.04, scaleY: bs * 1.04,
+            duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+          });
+        } else if (this.cargoCount === 0 && this.centroTween) {
+          this.centroTween.stop();
+          this.centroSprite.setDisplaySize(CONFIG.TILE * 3.2, CONFIG.TILE * 3.2);
+          this.centroTween = null;
+        }
+      }
+
+      setTruckAngle(dx, dy) {
+        let targetAngle = 0;
+        if (dx === 1) targetAngle = 90;
+        if (dx === -1) targetAngle = -90;
+        if (dy === 1) targetAngle = 180;
+        if (dy === -1) targetAngle = 0;
+
+        // Calcular el camino angular más corto para evitar rotaciones innecesarias de 270 grados
+        const currentAngle = this.truck.angle;
+        const diff = Phaser.Math.Angle.WrapDegrees(targetAngle - currentAngle);
+
+        this.tweens.add({
+          targets: this.truck,
+          angle: currentAngle + diff,
+          duration: 75,
+          ease: 'Linear'
+        });
+      }
+
+      triggerCrash() {
+        if (this.isGameOver) return;
+        this.cameras.main.shake(440, 0.022);
+        this.cameras.main.flash(280, 255, 40, 0);
+        this.gameOver('¡CHOCASTE con una obra! 💥');
+      }
+
+      checkCell() {
+        const r = this.gridY, c = this.gridX;
+        const key = r + ',' + c;
+        if (this.bagsGrid[key]) {
+          const bag = this.bagsGrid[key];
+          if (bag.active) { this.pickupBag(bag); if (!bag.active) delete this.bagsGrid[key]; }
+        }
+        if (c >= 17 && c <= 19 && r >= 17 && r <= 19) this.reachCentro();
+      }
+
+      updateTooltip() {
+        let closest = null, minD = 70;
+        this.bagsGroup.getChildren().forEach(b => {
+          if (!b.active) return;
+          const d = Phaser.Math.Distance.Between(this.truck.x, this.truck.y, b.x, b.y);
+          if (d < minD) { minD = d; closest = b; }
+        });
+        if (closest) {
+          this.tooltipTxt.setVisible(true)
+            .setText(closest.getData('tip'))
+            .setPosition(closest.x, closest.y - 34);
+        } else {
+          this.tooltipTxt.setVisible(false);
+        }
+      }
+
+      pickupBag(bag) {
+        if (this.isGameOver || this.isDelivering) return;
+        const type = bag.getData('type');
+        if (!this.cargoType) this.cargoType = type;
+
+        if (type !== this.cargoType) {
+          this.cameras.main.shake(500, 0.03);
+          this.cameras.main.flash(400, 255, 0, 0);
+          this.gameOver('¡CARGA CONTAMINADA! 🚫\nMezclaste tipos de residuos');
+          return;
+        }
+        if (this.cargoCount >= CONFIG.BAG_CAP) return;
+
+        this.cargoCount++;
+        this.bagsRemaining[type]--;
+
+        const tint = type === 'verde' ? 0x2ecc71 : type === 'negra' ? 0x7f8c9a : 0xe74c3c;
+        const em = this.add.particles(bag.x, bag.y, 'particle', {
+          speed: { min: 40, max: 120 }, lifespan: 360, quantity: 14,
+          scale: { start: 1, end: 0 }, tint
+        });
+        this.time.delayedCall(450, () => em.destroy());
+
+        bag.setActive(false);
+        this.tweens.add({
+          targets: bag, scaleX: 0, scaleY: 0, alpha: 0, duration: 160,
+          onComplete: () => bag.destroy()
+        });
+        this.refreshCargo();
+      }
+
+      reachCentro() {
+        if (this.isGameOver || this.isDelivering) return;
+        // Recargar combustible siempre
+        this.fuel = CONFIG.FUEL_FULL;
+        this.refreshFuel();
+        if (this.fuelBlinkTw) { this.fuelBlinkTw.stop(); this.fuelBlinkTw = null; this.fuelGfx.setAlpha(1); }
+        if (this.cargoCount === 0) return;
+
+        this.isDelivering = true;
+        const pts = this.cargoCount * 10;
+        let bonus = 0;
+        const isFullLoad = this.cargoCount >= CONFIG.BAG_CAP;
+        if (isFullLoad) bonus += 25;
+
+        const dType = this.cargoType;
+        this.totalDelivered[dType] += this.cargoCount;
+        this.totalBagsDelivered += this.cargoCount;
+
+        const typeClean = (this.bagsRemaining[dType] === 0 && this.totalDelivered[dType] >= this.bagsPerType);
+        if (typeClean) bonus += 50;
+
+        this.score += (pts + bonus);
+        const T = CONFIG.TILE;
+        const cx = 18 * T + T / 2, cy = 18 * T + T / 2;
+        this.floatText(cx, cy - 80, '+' + pts + ' pts', '#ffd700', 30);
+        if (isFullLoad) this.time.delayedCall(200, () => this.floatText(cx, cy - 118, 'CAMIÓN COMPLETO! +25', '#e84393', 21));
+        if (typeClean) this.time.delayedCall(440, () => this.floatText(cx, cy - 148, '¡TIPO LIMPIO! ♻️ +50', '#2ecc71', 21));
+
+        this.cargoCount = 0;
+        this.cargoType = null;
+
+        this.time.delayedCall(900, () => {
+          this.isDelivering = false;
+          this.refreshCargo();
+          this.refreshScore();
+          this.refreshBagCounts();
+          if (this.totalBagsDelivered >= this.totalBagsToDeliver) {
+            if (this.level === 1) this.nextLevel();
+            else this.victory();
+          }
+        });
+        this.refreshCargo();
+        this.refreshScore();
+        this.refreshBagCounts();
+      }
+
+      floatText(x, y, text, color, size) {
+        const t = this.add.text(x, y, text, {
+          fontFamily: 'Nunito', fontSize: size + 'px', fontStyle: 'bold',
+          color, stroke: '#080e1c', strokeThickness: 4
+        }).setOrigin(0.5).setDepth(100);
+        this.tweens.add({ targets: t, y: y - 80, alpha: 0, duration: 1300, ease: 'Power2', onComplete: () => t.destroy() });
+        this.tweens.add({ targets: t, scaleX: 1.3, scaleY: 1.3, duration: 120, yoyo: true });
+      }
+
+      startFuelBlink() {
+        if (this.fuelBlinkTw) return;
+        this.fuelBlinkTw = this.tweens.add({
+          targets: this.fuelGfx, alpha: 0.2, duration: 260, yoyo: true, repeat: -1
+        });
+      }
+
+      nextLevel() {
+        this.isGameOver = true;
+        this.gameActive = false;
+        const cam = this.cameras.main;
+        const sx = cam.scrollX, sy = cam.scrollY;
+        const W = cam.width, H = cam.height;
+        const cx = sx + W / 2, cy = sy + H / 2;
+
+        const fade = this.add.graphics().setDepth(500);
+        fade.fillStyle(0x080e1c, 0.92);
+        fade.fillRect(sx, sy, W, H);
+
+        const panel = this.add.graphics().setDepth(501);
+        panel.fillStyle(0x0a1a2e, 0.99);
+        panel.fillRoundedRect(cx - 210, cy - 95, 420, 190, 18);
+        panel.lineStyle(3, 0x4ecdc4, 1);
+        panel.strokeRoundedRect(cx - 210, cy - 95, 420, 190, 18);
+
+        this.add.text(cx, cy - 42, '¡NIVEL 1 COMPLETADO! 🎉', {
+          fontFamily: 'Nunito', fontSize: '23px', fontStyle: 'bold', color: '#ffd700'
+        }).setOrigin(0.5).setDepth(502);
+
+        this.add.text(cx, cy + 18, 'Preparando Nivel 2...\nMás bolsas y obstáculos 🚛💨', {
+          fontFamily: 'Nunito', fontSize: '16px', color: '#ffffff', align: 'center'
+        }).setOrigin(0.5).setDepth(502);
+
+        this.time.delayedCall(3200, () => {
+          this.scene.restart({ level: 2, score: this.score, fromMenu: false });
+        });
+      }
+
+      gameOver(reason) {
+        if (this.isGameOver) return;
+        this.isGameOver = true; this.gameActive = false;
+        this.time.delayedCall(700, () => {
+          document.getElementById('go-reason').textContent = reason;
+          document.getElementById('go-score').textContent = this.score;
+          document.getElementById('go-name').value = '';
+          document.getElementById('go-leaderboard').style.display = 'none';
+          document.getElementById('gameover-panel').className = 'overlay-panel visible';
+          document.getElementById('overlay-container').className = 'active';
+        });
+      }
+
+      victory() {
+        if (this.isGameOver) return;
+        this.isGameOver = true; this.gameActive = false;
+        this.time.delayedCall(600, () => {
+          document.getElementById('vic-score').textContent = this.score;
+          document.getElementById('vic-name').value = '';
+          document.getElementById('vic-leaderboard').style.display = 'none';
+          document.getElementById('victory-panel').className = 'overlay-panel visible';
+          document.getElementById('overlay-container').className = 'active';
+        });
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // LEADERBOARD
+    // ═══════════════════════════════════════════════════════════
+    async function saveScore(nombre, puntaje, motivo) {
+      const entry = { nombre, puntaje, motivo, fecha: new Date().toLocaleDateString('es-AR') };
+      if (CONFIG.jsonbinBinId === 'TU_BIN_ID_AQUI') {
+        let sc = JSON.parse(localStorage.getItem('urra_scores') || '[]');
+        sc.push(entry); sc.sort((a, b) => b.puntaje - a.puntaje); sc = sc.slice(0, 50);
+        localStorage.setItem('urra_scores', JSON.stringify(sc)); return sc;
+      }
+      try {
+        const r = await axios.get(CONFIG.jsonbinUrl() + '/latest', { headers: { 'X-Access-Key': CONFIG.jsonbinApiKey } });
+        let sc = Array.isArray(r.data.record) ? r.data.record : [];
+        sc.push(entry); sc.sort((a, b) => b.puntaje - a.puntaje); sc = sc.slice(0, 50);
+        await axios.put(CONFIG.jsonbinUrl(), sc, { headers: { 'X-Access-Key': CONFIG.jsonbinApiKey, 'Content-Type': 'application/json' } });
+        return sc;
+      } catch (e) { return []; }
+    }
+
+    function renderLB(tableEl, scores) {
+      const tbody = tableEl.querySelector('tbody');
+      tbody.innerHTML = '';
+      scores.slice(0, 10).forEach((s, i) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${medal}</td><td>${s.nombre || '???'}</td><td style="color:#ffd700;font-weight:bold;">${s.puntaje}</td><td>${s.fecha || ''}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('go-save').addEventListener('click', async () => {
+      const nm = document.getElementById('go-name').value.trim() || 'Anónimo';
+      const sc = await saveScore(nm, parseInt(document.getElementById('go-score').textContent), 'derrota');
+      renderLB(document.getElementById('leaderboard-table'), sc);
+      document.getElementById('go-leaderboard').style.display = 'block';
+    });
+    document.getElementById('go-retry').addEventListener('click', () => {
+      document.getElementById('overlay-container').className = '';
+      document.getElementById('gameover-panel').className = 'overlay-panel';
+      window.phaserGame.scene.getScene('GameScene').scene.restart({ level: 1, score: 0, fromMenu: false });
+    });
+    document.getElementById('vic-save').addEventListener('click', async () => {
+      const nm = document.getElementById('vic-name').value.trim() || 'Anónimo';
+      const sc = await saveScore(nm, parseInt(document.getElementById('vic-score').textContent), 'victoria');
+      renderLB(document.getElementById('vic-lb-table'), sc);
+      document.getElementById('vic-leaderboard').style.display = 'block';
+    });
+    document.getElementById('vic-retry').addEventListener('click', () => {
+      document.getElementById('overlay-container').className = '';
+      document.getElementById('victory-panel').className = 'overlay-panel';
+      window.phaserGame.scene.getScene('GameScene').scene.restart({ level: 1, score: 0, fromMenu: false });
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // INICIO PHASER
+    // ═══════════════════════════════════════════════════════════
+    window.phaserGame = new Phaser.Game({
+      type: Phaser.AUTO,
+      parent: 'game-container',
+      width: '100%',
+      height: '100%',
+      backgroundColor: '#0a0f1a',
+      scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+      },
+      physics: {
+        default: 'arcade',
+        arcade: { debug: false }
+      },
+      scene: [BootScene, PreloadScene, GameScene],
+      input: { activePointers: 3 }
+    });
+  </script>
+</body>
+
+</html>
