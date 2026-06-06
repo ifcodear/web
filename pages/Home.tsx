@@ -18,17 +18,17 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage }) => {
             Software de próxima generación
           </div>
           <h1 className="text-5xl lg:text-8xl font-black text-white leading-tight tracking-tighter">
-            Soluciones de Software <span className="text-primary">a Tu Medida</span>
+            Soluciones de Software <span className="text-primary">Bajo Demanda</span>
           </h1>
           <p className="text-xl text-gray-400 max-w-xl leading-relaxed">
-            Transformamos tus ideas en herramientas digitales robustas y escalables. Expertos en ingeniería de software para empresas de alto crecimiento.
+            Diseñamos y desarrollamos plataformas web y aplicaciones, Creamos código limpio, rápido y escalable. Automatización de procesos y soluciones basadas en inteligencia artificial.
           </p>
           <div className="flex flex-wrap gap-4">
             <button
               onClick={() => setCurrentPage(Page.RoadmapBuilder)}
               className="px-8 py-4 bg-primary text-black font-black rounded-xl shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
             >
-              Armar Proyecto
+              Agenda una auditoría técnica gratuita
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
               </svg>
