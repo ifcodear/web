@@ -33,12 +33,12 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
               </svg>
             </button>
-            <button
+            {/* <button
               onClick={() => setCurrentPage(Page.Services)}
               className="px-8 py-4 border border-white/10 text-white font-bold rounded-xl hover:bg-white/5 transition-all"
             >
               Ver Proyectos
-            </button>
+            </button> */}
           </div>
         </div>
         <div className="flex-1 relative">

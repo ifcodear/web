@@ -226,6 +226,7 @@
       BAG_CAP: 5,
       BAGS_L1: 6,
       BAGS_L2: 8,
+      BAGS_L3: 8,
       OBS_MIN_L1: 7, OBS_MAX_L1: 11,
       OBS_MIN_L2: 13, OBS_MAX_L2: 17
     };
@@ -418,6 +419,11 @@
         this.load.image('casa_amarilla', 'assets/casa_amarilla.png');
         this.load.image('calle', 'assets/calle.png');
         this.load.image('work', 'assets/work.png');
+        this.load.spritesheet('perrito_anim', 'assets/perrito_spritesheet.png', {
+          frameWidth: 64,
+          frameHeight: 64
+        });
+        this.load.image('bolsa_rota', 'assets/bolsa_rota.png');
 
         // Cargar spritesheet animado del obstáculo desde el GIF procesado
         this.load.spritesheet('work_anim', 'assets/work_spritesheet.png', {
@@ -486,9 +492,24 @@
         if (this._failed['casa_roja']) makeFallback(this, 'casa_roja', T * 2, T * 2, 0xc0392b);
         if (this._failed['casa_amarilla']) makeFallback(this, 'casa_amarilla', T * 2, T * 2, 0xf1c40f);
 
-        // ─ WORK / obstáculo (Fallback si falla) ─
-        if (this._failed['work']) {
-          makeFallback(this, 'work', T, T, 0xf39c12);
+        // ─ Perrito (Fallback si falla) ─
+        if (this._failed['perrito_anim']) {
+          makeFallback(this, 'perrito_anim', T, T, 0xa0522d);
+        }
+
+        // ─ Bolsa rota (Fallback si falla) ─
+        if (this._failed['bolsa_rota']) {
+          makeFallback(this, 'bolsa_rota', T * 0.66, T * 0.66, 0x555555);
+        }
+
+        // ─ Registrar animación del perrito ─
+        if (!this._failed['perrito_anim']) {
+          this.anims.create({
+            key: 'dog_walk',
+            frames: this.anims.generateFrameNumbers('perrito_anim', { start: 0, end: 3 }),
+            frameRate: 8,
+            repeat: -1
+          });
         }
 
         // ─ Registrar animación del obstáculo de obra WORK.gif ─
@@ -505,7 +526,7 @@
         this.time.delayedCall(200, () => {
           this.cameras.main.fadeOut(300);
           this.time.delayedCall(300, () => {
-            this.scene.start('GameScene', { level: 1, score: 0, fromMenu: true });
+            this.scene.start('GameScene', { level: 3, score: 0, fromMenu: false });
           });
         });
       }
@@ -525,7 +546,7 @@
         this.cargoType = null;
         this.cargoCount = 0;
         this.totalDelivered = { verde: 0, negra: 0, roja: 0 };
-        const n = this.level === 1 ? CONFIG.BAGS_L1 : CONFIG.BAGS_L2;
+        const n = this.level === 1 ? CONFIG.BAGS_L1 : (this.level === 2 ? CONFIG.BAGS_L2 : CONFIG.BAGS_L3);
         this.bagsPerType = n;
         this.bagsRemaining = { verde: n, negra: n, roja: n };
         this.isGameOver = false;
@@ -544,6 +565,7 @@
         this._menuObjs = [];
         this.obstacleGrid = {};
         this.bagsGrid = {};
+        this.dogs = [];
       }
 
       create() {
@@ -556,6 +578,7 @@
 
         this.placeObstacles();
         this.placeBags();
+        this.placeDogs();
 
         // Centro URRA (imagen limpia)
         const cX = 18 * T + T / 2, cY = 18 * T + T / 2;
@@ -678,9 +701,14 @@
       // ─── OBSTÁCULOS ────────────────────────────────────────────
       placeObstacles() {
         const T = CONFIG.TILE;
-        const min = this.level === 1 ? CONFIG.OBS_MIN_L1 : CONFIG.OBS_MIN_L2;
-        const max = this.level === 1 ? CONFIG.OBS_MAX_L1 : CONFIG.OBS_MAX_L2;
-        const count = Phaser.Math.Between(min, max);
+        let count;
+        if (this.level === 3) {
+          count = 4;
+        } else {
+          const min = this.level === 1 ? CONFIG.OBS_MIN_L1 : CONFIG.OBS_MIN_L2;
+          const max = this.level === 1 ? CONFIG.OBS_MAX_L1 : CONFIG.OBS_MAX_L2;
+          count = Phaser.Math.Between(min, max);
+        }
         const forbidden = new Set();
 
         for (let r = 16; r < 20; r++) for (let c = 16; c < 20; c++) forbidden.add(r + ',' + c);
@@ -760,6 +788,247 @@
             placed++;
           }
         });
+      }
+
+      // ─── PERRITOS ──────────────────────────────────────────────
+      placeDogs() {
+        if (this.level !== 3) return;
+        const T = CONFIG.TILE;
+        
+        // Spawn points en esquinas opuestas de las calles
+        const spawnPoints = [
+          { x: 1, y: 18 },
+          { x: 18, y: 1 }
+        ];
+        
+        spawnPoints.forEach((sp, idx) => {
+          let gx = sp.x, gy = sp.y;
+          // Si por alguna razón coincide con un obstáculo, busca adyacente transitable
+          if (this.obstacleGrid[gy + ',' + gx]) {
+            let found = false;
+            for (let dx of [-1, 0, 1]) {
+              for (let dy of [-1, 0, 1]) {
+                const nx = gx + dx, ny = gy + dy;
+                if (ny >= 0 && ny < CONFIG.MAP_ROWS && nx >= 0 && nx < CONFIG.MAP_COLS) {
+                  if (MAP_DATA[ny][nx] === 1 && !this.obstacleGrid[ny + ',' + nx]) {
+                    gx = nx; gy = ny;
+                    found = true;
+                    break;
+                  }
+                }
+              }
+              if (found) break;
+            }
+          }
+          
+          const px = gx * T + T / 2;
+          const py = gy * T + T / 2;
+          const dog = this.add.sprite(px, py, 'perrito_anim')
+            .setDisplaySize(T * 0.75, T * 0.75)
+            .setDepth(4);
+          if (this.anims.exists('dog_walk')) {
+            dog.play('dog_walk');
+          }
+            
+          dog.setData('gridX', gx);
+          dog.setData('gridY', gy);
+          dog.setData('targetGridX', gx);
+          dog.setData('targetGridY', gy);
+          dog.setData('isMoving', false);
+          dog.setData('moveProgress', 0);
+          dog.setData('currentDir', { x: 0, y: 0 });
+          dog.setData('chewingTimer', 0);
+          dog.setData('chewingBag', null);
+          
+          this.dogs.push(dog);
+        });
+      }
+
+      chooseDogDirection(dog) {
+        const gx = dog.getData('gridX');
+        const gy = dog.getData('gridY');
+        const currentDir = dog.getData('currentDir') || { x: 0, y: 0 };
+        
+        const dirs = [
+          { x: 0, y: -1 }, // Arriba
+          { x: 0, y: 1 },  // Abajo
+          { x: -1, y: 0 }, // Izquierda
+          { x: 1, y: 0 }   // Derecha
+        ];
+        
+        const validDirs = [];
+        dirs.forEach(d => {
+          const nx = gx + d.x, ny = gy + d.y;
+          if (nx >= 0 && nx < CONFIG.MAP_COLS && ny >= 0 && ny < CONFIG.MAP_ROWS) {
+            // Solo circulan por donde el camión puede (calle/plaza/centro > 0) y sin obstáculos
+            if (MAP_DATA[ny][nx] > 0 && !this.obstacleGrid[ny + ',' + nx]) {
+              validDirs.push(d);
+            }
+          }
+        });
+        
+        if (validDirs.length === 0) return { x: 0, y: 0 };
+        
+        // Conservar dirección (momento/patrullaje) si es válida
+        const isCurrentValid = validDirs.some(d => d.x === currentDir.x && d.y === currentDir.y);
+        
+        if (isCurrentValid) {
+          const oppositeDir = { x: -currentDir.x, y: -currentDir.y };
+          const forwardOrSides = validDirs.filter(d => !(d.x === oppositeDir.x && d.y === oppositeDir.y));
+          
+          if (forwardOrSides.length === 1) {
+            return currentDir;
+          } else if (forwardOrSides.length > 1) {
+            // Intersección: 65% probabilidad de seguir recto, 35% de doblar
+            if (Math.random() < 0.65) {
+              return currentDir;
+            }
+          }
+        }
+        
+        // Elegir dirección aleatoria (evitando volver atrás a menos que sea callejón sin salida)
+        const oppositeDir = { x: -currentDir.x, y: -currentDir.y };
+        const nonOppositeDirs = validDirs.filter(d => !(d.x === oppositeDir.x && d.y === oppositeDir.y));
+        
+        if (nonOppositeDirs.length > 0) {
+          return Phaser.Utils.Array.GetRandom(nonOppositeDirs);
+        } else {
+          return Phaser.Utils.Array.GetRandom(validDirs);
+        }
+      }
+
+      updateDogs(delta) {
+        const T = CONFIG.TILE;
+        const DOG_SPEED = 1.25; // Velocidad de los perritos (un cuarto de la velocidad del camión 5.0)
+        
+        this.dogs.forEach(dog => {
+          let chewingTimer = dog.getData('chewingTimer') || 0;
+          
+          if (chewingTimer > 0) {
+            chewingTimer -= delta;
+            dog.setData('chewingTimer', chewingTimer);
+            
+            // Efecto jiggle/tembleque simpático al morder la bolsa
+            dog.x = (dog.getData('gridX') * T + T / 2) + Phaser.Math.Between(-2, 2);
+            dog.y = (dog.getData('gridY') * T + T / 2) + Phaser.Math.Between(-2, 2);
+            
+            if (chewingTimer <= 0) {
+              const bag = dog.getData('chewingBag');
+              if (bag && bag.active) {
+                this.destroyBag(bag);
+              }
+              dog.setData('chewingBag', null);
+              dog.x = dog.getData('gridX') * T + T / 2;
+              dog.y = dog.getData('gridY') * T + T / 2;
+            }
+            return;
+          }
+          
+          let isMoving = dog.getData('isMoving');
+          if (!isMoving) {
+            const gx = dog.getData('gridX');
+            const gy = dog.getData('gridY');
+            
+            // Comprobar si hay una bolsa en la celda actual del perro
+            const key = gy + ',' + gx;
+            const bag = this.bagsGrid[key];
+            if (bag && bag.active && !bag.getData('broken')) {
+              dog.setData('chewingTimer', 3000); // 3 segundos rompiendo la bolsa
+              dog.setData('chewingBag', bag);
+              return;
+            }
+            
+            const nextDir = this.chooseDogDirection(dog);
+            if (nextDir.x !== 0 || nextDir.y !== 0) {
+              dog.setData('targetGridX', gx + nextDir.x);
+              dog.setData('targetGridY', gy + nextDir.y);
+              dog.setData('currentDir', nextDir);
+              dog.setData('isMoving', true);
+              dog.setData('moveProgress', 0);
+              
+              // Girar perrito horizontalmente según dirección (sin rotar la imagen)
+              if (nextDir.x === -1) dog.setFlipX(true);
+              else if (nextDir.x === 1) dog.setFlipX(false);
+            }
+          }
+          
+          isMoving = dog.getData('isMoving');
+          if (isMoving) {
+            let progress = dog.getData('moveProgress');
+            progress += (DOG_SPEED * delta) / 1000;
+            dog.setData('moveProgress', progress);
+            
+            const gx = dog.getData('gridX');
+            const gy = dog.getData('gridY');
+            const tx = dog.getData('targetGridX');
+            const ty = dog.getData('targetGridY');
+            
+            if (progress >= 1) {
+              dog.x = tx * T + T / 2;
+              dog.y = ty * T + T / 2;
+              dog.setData('gridX', tx);
+              dog.setData('gridY', ty);
+              dog.setData('isMoving', false);
+              dog.setData('moveProgress', 0);
+            } else {
+              const sx = gx * T + T / 2, sy = gy * T + T / 2;
+              const ex = tx * T + T / 2, ey = ty * T + T / 2;
+              dog.x = sx + (ex - sx) * progress;
+              dog.y = sy + (ey - sy) * progress;
+            }
+          }
+          
+          // Comprobar colisión camión vs perrito
+          const dist = Phaser.Math.Distance.Between(this.truck.x, this.truck.y, dog.x, dog.y);
+          if (dist < T * 0.72) {
+            this.gameOver('¡PISASTE UN PERRITO! 😢\nCuidemos a los animales');
+          }
+        });
+      }
+
+      destroyBag(bag) {
+        if (!bag || !bag.active) return;
+        
+        const type = bag.getData('type');
+        const key = Math.floor(bag.y / CONFIG.TILE) + ',' + Math.floor(bag.x / CONFIG.TILE);
+        
+        // Ocultar y desactivar bolsa recolectable
+        bag.setActive(false);
+        bag.setVisible(false);
+        
+        // Poner la bolsa rota en el suelo
+        const brokenBag = this.add.image(bag.x, bag.y, 'bolsa_rota')
+          .setDisplaySize(CONFIG.TILE * 0.66, CONFIG.TILE * 0.66)
+          .setDepth(1);
+        
+        // Partículas de basura
+        const em = this.add.particles(bag.x, bag.y, 'particle', {
+          speed: { min: 20, max: 70 }, lifespan: 450, quantity: 15,
+          scale: { start: 1, end: 0 }, tint: 0x6e5030 // Basura color tierra
+        });
+        this.time.delayedCall(500, () => em.destroy());
+        
+        // Eliminar de los grids
+        delete this.bagsGrid[key];
+        
+        // Texto flotante
+        const typeNames = { verde: 'orgánica', negra: 'reciclable', roja: 'sanitaria' };
+        this.floatText(bag.x, bag.y - 20, '¡Bolsa ' + (typeNames[type] || '') + ' rota! 🐕', '#ff6b6b', 16);
+        
+        // Restar contadores
+        this.bagsRemaining[type]--;
+        this.totalBagsToDeliver--;
+        
+        this.refreshBagCounts();
+        
+        // Destruir objeto Phaser
+        bag.destroy();
+        
+        // Comprobar condición de victoria/fin de nivel si todas las bolsas del mapa están resueltas
+        if (this.totalBagsDelivered >= this.totalBagsToDeliver) {
+          if (this.level === 1 || this.level === 2) this.nextLevel();
+          else this.victory();
+        }
       }
 
       // ─── JOYSTICK ──────────────────────────────────────────────
@@ -1071,6 +1340,11 @@
 
         const T = CONFIG.TILE;
 
+        // Actualizar perritos en nivel 3
+        if (this.level === 3) {
+          this.updateDogs(delta);
+        }
+
         if (!this.isMoving) {
           let dx = 0, dy = 0;
           if (this.cursors.left.isDown || this.wasd.left.isDown) dx = -1;
@@ -1262,7 +1536,7 @@
           this.refreshScore();
           this.refreshBagCounts();
           if (this.totalBagsDelivered >= this.totalBagsToDeliver) {
-            if (this.level === 1) this.nextLevel();
+            if (this.level === 1 || this.level === 2) this.nextLevel();
             else this.victory();
           }
         });
@@ -1305,16 +1579,22 @@
         panel.lineStyle(3, 0x4ecdc4, 1);
         panel.strokeRoundedRect(cx - 210, cy - 95, 420, 190, 18);
 
-        this.add.text(cx, cy - 42, '¡NIVEL 1 COMPLETADO! 🎉', {
+        const titleText = this.level === 1 ? '¡NIVEL 1 COMPLETADO! 🎉' : '¡NIVEL 2 COMPLETADO! 🎉';
+        const subText = this.level === 1 
+          ? 'Preparando Nivel 2...\nMás bolsas y obstáculos 🚛💨' 
+          : 'Preparando Nivel 3...\n¡Cuidado con los perritos sueltos! 🐕⚠️';
+
+        this.add.text(cx, cy - 42, titleText, {
           fontFamily: 'Nunito', fontSize: '23px', fontStyle: 'bold', color: '#ffd700'
         }).setOrigin(0.5).setDepth(502);
 
-        this.add.text(cx, cy + 18, 'Preparando Nivel 2...\nMás bolsas y obstáculos 🚛💨', {
+        this.add.text(cx, cy + 18, subText, {
           fontFamily: 'Nunito', fontSize: '16px', color: '#ffffff', align: 'center'
         }).setOrigin(0.5).setDepth(502);
 
+        const nextLvlNum = this.level + 1;
         this.time.delayedCall(3200, () => {
-          this.scene.restart({ level: 2, score: this.score, fromMenu: false });
+          this.scene.restart({ level: nextLvlNum, score: this.score, fromMenu: false });
         });
       }
 
